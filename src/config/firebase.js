@@ -1,13 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { 
-  getAuth, 
-  GoogleAuthProvider, 
-  signInWithPopup,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  sendEmailVerification,
-  signOut
-} from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -28,19 +20,20 @@ export const loginWithGoogle = async () => {
   return { user: result.user, token };
 };
 
-export const registerWithEmail = async (email, password) => {
-  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-  await sendEmailVerification(userCredential.user);
-  return userCredential.user;
-};
-
 export const loginWithEmail = async (email, password) => {
-  const userCredential = await signInWithEmailAndPassword(auth, email, password);
-  if (!userCredential.user.emailVerified) {
-    throw new Error('Please verify your email address before logging in.');
-  }
-  const token = await userCredential.user.getIdToken();
-  return { user: userCredential.user, token };
+  const result = await signInWithEmailAndPassword(auth, email, password);
+  const token = await result.user.getIdToken();
+  return { user: result.user, token };
 };
 
-export const logout = () => signOut(auth);
+export const registerWithEmail = async (email, password) => {
+  const result = await createUserWithEmailAndPassword(auth, email, password);
+  return result.user;
+};
+
+console.log("Loaded Firebase API Key:", import.meta.env.VITE_FIREBASE_API_KEY);
+
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  // ... rest of your config
+};
