@@ -7,14 +7,21 @@ export default function Login() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
   // 1. Backend Sync Helper
   const syncWithBackend = async (idToken) => {
-    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/sync-user`, {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+    const res = await fetch(`${baseUrl}/api/auth/sync-user`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ idToken }),
     });
+
+    const contentType = res.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      throw new Error(`Server returned non-JSON response (${res.status}). Check VITE_API_BASE_URL backend endpoint.`);
+    }
 
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Backend synchronization failed');
@@ -28,10 +35,14 @@ export default function Login() {
   const handleGoogleLogin = async () => {
     try {
       setError('');
-      const { token } = await loginWithGoogle();
-      await syncWithBackend(token);
+      setLoading(true);
+      const userCredential = await loginWithGoogle();
+      const idToken = await userCredential.user.getIdToken();
+      await syncWithBackend(idToken);
     } catch (err) {
       setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -40,6 +51,7 @@ export default function Login() {
     e.preventDefault();
     setError('');
     setMessage('');
+    setLoading(true);
 
     try {
       if (isRegistering) {
@@ -47,11 +59,14 @@ export default function Login() {
         setMessage('Verification email sent! Please check your inbox before logging in.');
         setIsRegistering(false);
       } else {
-        const { token } = await loginWithEmail(email, password);
-        await syncWithBackend(token);
+        const userCredential = await loginWithEmail(email, password);
+        const idToken = await userCredential.user.getIdToken();
+        await syncWithBackend(idToken);
       }
     } catch (err) {
       setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -62,16 +77,17 @@ export default function Login() {
           {isRegistering ? 'Create Skillforge Account' : 'Sign in to Skillforge'}
         </h2>
 
-        {error && <div className="mb-4 text-sm bg-red-500/20 text-red-400 p-3 rounded">{error}</div>}
+        {error && <div className="mb-4 text-sm bg-red-500/20 text-red-400 p-3 rounded break-words">{error}</div>}
         {message && <div className="mb-4 text-sm bg-green-500/20 text-green-400 p-3 rounded">{message}</div>}
 
         {/* Google Login Button */}
         <button
           onClick={handleGoogleLogin}
-          className="w-full flex items-center justify-center gap-2 bg-white text-gray-900 py-2.5 rounded font-semibold hover:bg-gray-100 transition mb-4"
+          disabled={loading}
+          className="w-full flex items-center justify-center gap-2 bg-white text-gray-900 py-2.5 rounded font-semibold hover:bg-gray-100 transition mb-4 disabled:opacity-50"
         >
           <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" alt="Google" />
-          Continue with Google
+          {loading ? 'Signing in...' : 'Continue with Google'}
         </button>
 
         <div className="flex items-center my-4">
@@ -106,15 +122,17 @@ export default function Login() {
 
           <button
             type="submit"
-            className="w-full bg-blue-600 py-2.5 rounded font-semibold hover:bg-blue-500 transition"
+            disabled={loading}
+            className="w-full bg-blue-600 py-2.5 rounded font-semibold hover:bg-blue-500 transition disabled:opacity-50"
           >
-            {isRegistering ? 'Register Account' : 'Sign In'}
+            {loading ? 'Processing...' : isRegistering ? 'Register Account' : 'Sign In'}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-gray-400">
           {isRegistering ? 'Already have an account?' : "Don't have an account?"}{' '}
           <button
+            type="button"
             onClick={() => setIsRegistering(!isRegistering)}
             className="text-blue-400 hover:underline font-semibold ml-1"
           >
