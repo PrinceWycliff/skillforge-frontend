@@ -24,3 +24,5 @@ export const googleProvider = new GoogleAuthProvider();
 export const loginWithGoogle = () => signInWithPopup(auth, googleProvider);
 export const loginWithEmail = (email, password) => signInWithEmailAndPassword(auth, email, password);
 export const registerWithEmail = (email, password) => createUserWithEmailAndPassword(auth, email, password);
+
+console.log("Loaded Firebase API Key:", import.meta.env.VITE_FIREBASE_API_KEY);
