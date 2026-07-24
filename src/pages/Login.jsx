@@ -1,173 +1,126 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Lock, Mail, User, ArrowRight } from 'lucide-react';
+import { loginWithGoogle, loginWithEmail, registerWithEmail } from '../config/firebase';
 
 export default function Login() {
-  const [isRegister, setIsRegister] = useState(false);
-  const [formData, setFormData] = useState({ fullName: '', email: '', password: '' });
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isRegistering, setIsRegistering] = useState(false);
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
 
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const from = location.state?.from || '/dashboard';
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setError('');
-
-    const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
-
-    fetch(`http://localhost:5000${endpoint}`, {
+  // 1. Backend Sync Helper
+  const syncWithBackend = async (idToken) => {
+    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/sync-user`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData)
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          localStorage.setItem('sf_token', data.token);
-          localStorage.setItem('sf_user', JSON.stringify(data.user));
+      body: JSON.stringify({ idToken }),
+    });
 
-          // Role-based smart navigation
-          if (data.user.role === 'admin') {
-            navigate('/admin/dashboard', { replace: true });
-          } else if (data.user.role === 'instructor') {
-            navigate('/instructor/studio', { replace: true });
-          } else {
-            navigate(from, { replace: true });
-          }
-        } else {
-          setError(data.message || 'Authentication failed');
-        }
-      })
-      .catch(() => {
-        // Fallback for local testing
-        const role = formData.email.includes('admin')
-          ? 'admin'
-          : formData.email.includes('instructor')
-          ? 'instructor'
-          : 'student';
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Backend synchronization failed');
 
-        const demoUser = {
-          id: 101,
-          fullName: formData.fullName || 'Demo User',
-          email: formData.email,
-          role: role
-        };
+    // Store verified backend user session
+    localStorage.setItem('user', JSON.stringify(data.user));
+    window.location.href = '/dashboard';
+  };
 
-        localStorage.setItem('sf_token', 'demo_token_skillforge');
-        localStorage.setItem('sf_user', JSON.stringify(demoUser));
+  // 2. Google Sign-In Handler
+  const handleGoogleLogin = async () => {
+    try {
+      setError('');
+      const { token } = await loginWithGoogle();
+      await syncWithBackend(token);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
 
-        if (demoUser.role === 'admin') {
-          navigate('/admin/dashboard', { replace: true });
-        } else if (demoUser.role === 'instructor') {
-          navigate('/instructor/studio', { replace: true });
-        } else {
-          navigate(from, { replace: true });
-        }
-      });
+  // 3. Email & Password Form Handler
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setMessage('');
+
+    try {
+      if (isRegistering) {
+        await registerWithEmail(email, password);
+        setMessage('Verification email sent! Please check your inbox before logging in.');
+        setIsRegistering(false);
+      } else {
+        const { token } = await loginWithEmail(email, password);
+        await syncWithBackend(token);
+      }
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[#0B1130] text-white flex items-center justify-center p-6">
-      <div className="w-full max-w-md bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-xl shadow-2xl relative overflow-hidden">
-        
-        {/* Glow Accent */}
-        <div className="absolute -top-12 -left-12 w-32 h-32 bg-[#2546F0]/30 rounded-full blur-2xl pointer-events-none" />
-        <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-[#34E0D8]/20 rounded-full blur-2xl pointer-events-none" />
+    <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white p-4">
+      <div className="max-w-md w-full bg-gray-800 rounded-lg p-8 shadow-lg">
+        <h2 className="text-2xl font-bold mb-6 text-center">
+          {isRegistering ? 'Create Skillforge Account' : 'Sign in to Skillforge'}
+        </h2>
 
-        <div className="text-center mb-8 relative z-10">
-          <Link to="/" className="inline-block text-3xl font-extrabold text-[#34E0D8] tracking-wider mb-2 hover:opacity-90 transition-opacity">
-            SKILLFORGE.
-          </Link>
-          <p className="text-gray-400 text-sm">
-            {location.state?.from 
-              ? 'Please sign in to enroll and start learning.' 
-              : isRegister 
-                ? 'Create your account to start forging skills.' 
-                : 'Sign in to access your dashboard & courses.'}
-          </p>
+        {error && <div className="mb-4 text-sm bg-red-500/20 text-red-400 p-3 rounded">{error}</div>}
+        {message && <div className="mb-4 text-sm bg-green-500/20 text-green-400 p-3 rounded">{message}</div>}
+
+        {/* Google Login Button */}
+        <button
+          onClick={handleGoogleLogin}
+          className="w-full flex items-center justify-center gap-2 bg-white text-gray-900 py-2.5 rounded font-semibold hover:bg-gray-100 transition mb-4"
+        >
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" alt="Google" />
+          Continue with Google
+        </button>
+
+        <div className="flex items-center my-4">
+          <div className="flex-1 border-t border-gray-700"></div>
+          <span className="px-3 text-xs text-gray-400 uppercase">Or with email</span>
+          <div className="flex-1 border-t border-gray-700"></div>
         </div>
 
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-xs p-3 rounded-xl mb-6 relative z-10">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4 relative z-10">
-          {isRegister && (
-            <div>
-              <label className="block text-xs font-semibold text-gray-300 mb-1">Full Name</label>
-              <div className="relative">
-                <User className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
-                <input
-                  type="text"
-                  required
-                  placeholder="John Doe"
-                  value={formData.fullName}
-                  onChange={e => setFormData({ ...formData, fullName: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-[#34E0D8] transition-colors"
-                />
-              </div>
-            </div>
-          )}
-
+        {/* Form Login / Register */}
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-gray-300 mb-1">Email Address</label>
-            <div className="relative">
-              <Mail className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
-              <input
-                type="email"
-                required
-                placeholder="user@skillforge.dev"
-                value={formData.email}
-                onChange={e => setFormData({ ...formData, email: e.target.value })}
-                className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-[#34E0D8] transition-colors"
-              />
-            </div>
+            <label className="block text-sm mb-1">Email</label>
+            <input
+              type="email"
+              required
+              className="w-full bg-gray-700 rounded p-2.5 border border-gray-600 focus:outline-none focus:border-blue-500"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-300 mb-1">Password</label>
-            <div className="relative">
-              <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
-              <input
-                type="password"
-                required
-                placeholder="••••••••"
-                value={formData.password}
-                onChange={e => setFormData({ ...formData, password: e.target.value })}
-                className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-[#34E0D8] transition-colors"
-              />
-            </div>
+            <label className="block text-sm mb-1">Password</label>
+            <input
+              type="password"
+              required
+              className="w-full bg-gray-700 rounded p-2.5 border border-gray-600 focus:outline-none focus:border-blue-500"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
           </div>
 
           <button
             type="submit"
-            className="w-full py-3 rounded-xl bg-[#2546F0] hover:bg-[#2546F0]/90 font-bold text-white text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-[#2546F0]/30 mt-6"
+            className="w-full bg-blue-600 py-2.5 rounded font-semibold hover:bg-blue-500 transition"
           >
-            {isRegister ? 'Create Account & Enroll' : 'Sign In & Proceed'} <ArrowRight className="w-4 h-4" />
+            {isRegistering ? 'Register Account' : 'Sign In'}
           </button>
         </form>
 
-        <div className="text-center mt-6 border-t border-white/10 pt-6 relative z-10 flex flex-col gap-3">
+        <p className="mt-6 text-center text-sm text-gray-400">
+          {isRegistering ? 'Already have an account?' : "Don't have an account?"}{' '}
           <button
-            onClick={() => setIsRegister(!isRegister)}
-            className="text-xs text-[#34E0D8] hover:underline"
+            onClick={() => setIsRegistering(!isRegistering)}
+            className="text-blue-400 hover:underline font-semibold ml-1"
           >
-            {isRegister ? 'Already have an account? Sign in' : "Don't have an account? Register"}
+            {isRegistering ? 'Sign In' : 'Create one'}
           </button>
-
-          <Link
-            to="/admin/login"
-            className="text-xs text-gray-500 hover:text-gray-300 font-mono transition-colors"
-          >
-            🔒 System Admin Portal
-          </Link>
-        </div>
-
+        </p>
       </div>
     </div>
   );
