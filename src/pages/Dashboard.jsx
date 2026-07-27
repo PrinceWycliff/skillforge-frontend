@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    // Read the user object from local storage on mount
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       try {
@@ -15,7 +15,6 @@ export default function Dashboard() {
     }
   }, []);
 
-  // Fallback chain: full_name -> fullName -> email prefix -> Student
   const displayName = 
     user?.full_name || 
     user?.fullName || 
@@ -43,12 +42,12 @@ export default function Dashboard() {
           <p className="text-gray-400 text-sm mb-6">
             Explore the catalog to enroll in IT, Networking, or Software Engineering tracks tailored for you.
           </p>
-          <a 
-            href="/catalog" 
-            className="inline-block bg-blue-600 hover:bg-blue-500 text-white font-medium px-5 py-2.5 rounded-lg transition"
+          <Link 
+            to="/catalog" 
+            className="inline-block bg-blue-600 hover:bg-blue-500 text-white font-medium px-5 py-2.5 rounded-lg transition shadow-md"
           >
             Explore Course Catalog
-          </a>
+          </Link>
         </div>
       </section>
     </div>
