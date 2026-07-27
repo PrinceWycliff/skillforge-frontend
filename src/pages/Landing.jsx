@@ -66,7 +66,7 @@ export default function Landing() {
           
           {/* Main Headline */}
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-3">
-            Master Practical Tech Skills with <span className="text-blue-400">Skillforge</span>
+            Explore Courses & Skill Tracks <span className="text-blue-400">Build hands-on expertise in Networking, Systems Administration, and Software Engineering.</span>
           </h1>
 
           {/* Subtitle / Description Text */}
