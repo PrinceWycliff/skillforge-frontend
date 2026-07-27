@@ -20,7 +20,7 @@ export default function Login() {
 
     const contentType = res.headers.get('content-type');
     if (!contentType || !contentType.includes('application/json')) {
-      throw new Error(`Server returned non-JSON response (${res.status}). Check VITE_API_BASE_URL backend endpoint.`);
+      throw new Error(`Server returned non-JSON response (${res.status}). Check VITE_API_BASE_URL endpoint.`);
     }
 
     const data = await res.json();
