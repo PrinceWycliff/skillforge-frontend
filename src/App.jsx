@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Catalog from './pages/Catalog';
+import Landing from './pages/Landing'; // Landing / Homepage
+import Catalog from './pages/Catalog'; // Dedicated Course Catalog
 import Player from './pages/Player';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
@@ -16,7 +17,7 @@ export default function App() {
       <div className="min-h-screen bg-[#0B1130] text-white">
         <Routes>
           {/* Public Routes */}
-          <Route path="/" element={<Catalog />} />
+          <Route path="/" element={<Landing />} />
           <Route path="/catalog" element={<Catalog />} />
           <Route path="/login" element={<Login />} />
           
