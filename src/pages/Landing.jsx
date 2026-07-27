@@ -1,58 +1,90 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, Cpu, BookOpen, ArrowRight } from 'lucide-react';
 
 export default function Landing() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    // Check if user session exists in local storage
+    const user = localStorage.getItem('user');
+    setIsLoggedIn(!!user);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-[#0B1130] text-white">
-      {/* Hero Section */}
-      <section className="max-w-6xl mx-auto px-6 pt-20 pb-16 text-center">
-        <span className="inline-block px-4 py-1.5 rounded-full bg-[#34E0D8]/10 text-[#34E0D8] text-xs font-semibold tracking-wider uppercase mb-6 border border-[#34E0D8]/20">
-          Industry-Standard Tech Skills
-        </span>
-        <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
-          Master Modern Tech with <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#2546F0] to-[#34E0D8]">
-            Interactive Hands-on Courses
-          </span>
+    <div className="min-h-screen bg-[#0B1130] text-white flex flex-col">
+      {/* ========================================================= */}
+      {/* 1. TOP NAVBAR / HEADER WITH LOGO & SIGN IN BUTTON         */}
+      {/* ========================================================= */}
+      <header className="border-b border-gray-800 bg-[#0B1130]/90 backdrop-blur sticky top-0 z-50 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          
+          {/* Skillforge Logo & Brand Name */}
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-xl text-white shadow-lg group-hover:bg-blue-500 transition">
+              S
+            </div>
+            <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 text-transparent bg-clip-text tracking-wide">
+              Skillforge
+            </span>
+          </Link>
+
+          {/* Navigation & Action Buttons */}
+          <div className="flex items-center gap-4">
+            <Link 
+              to="/catalog" 
+              className="hidden sm:inline-block text-gray-300 hover:text-white text-sm font-medium transition px-3 py-2"
+            >
+              Courses
+            </Link>
+
+            {isLoggedIn ? (
+              <Link
+                to="/dashboard"
+                className="bg-blue-600 hover:bg-blue-500 text-white font-medium px-5 py-2 rounded-lg text-sm transition shadow-md"
+              >
+                Go to Dashboard
+              </Link>
+            ) : (
+              <Link
+                to="/login"
+                className="bg-blue-600 hover:bg-blue-500 text-white font-medium px-5 py-2 rounded-lg text-sm transition shadow-md"
+              >
+                Sign In
+              </Link>
+            )}
+          </div>
+
+        </div>
+      </header>
+
+      {/* ========================================================= */}
+      {/* 2. HOMEPAGE HERO & CONTENT SECTION                        */}
+      {/* ========================================================= */}
+      <main className="flex-1 max-w-7xl w-full mx-auto p-6 md:p-12 flex flex-col justify-center items-center text-center">
+        <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6">
+          Master Practical Tech Skills with <span className="text-blue-400">Skillforge</span>
         </h1>
-        <p className="text-gray-400 max-w-2xl mx-auto text-lg mb-8">
-          Accelerate your development journey with short, structured technical tracks, real-time video streaming, and verified digital certificates.
+        <p className="text-gray-400 text-lg max-w-2xl mb-8">
+          Hands-on tracks designed for Systems Administration, Computer Networking, Software Engineering, and Business IT.
         </p>
-        <div className="flex justify-center gap-4">
+
+        <div className="flex flex-col sm:flex-row gap-4">
           <Link
             to="/catalog"
-            className="px-8 py-3.5 rounded-xl bg-[#2546F0] hover:bg-[#2546F0]/90 font-semibold flex items-center gap-2 shadow-lg transition-all"
+            className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold shadow-lg transition"
           >
-            Explore Courses <ArrowRight className="w-5 h-5" />
+            Explore Course Catalog
           </Link>
-          <Link
-            to="/dashboard"
-            className="px-8 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 font-semibold border border-white/10 transition-all"
-          >
-            Student Dashboard
-          </Link>
+          {!isLoggedIn && (
+            <Link
+              to="/login"
+              className="bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 px-6 py-3 rounded-lg font-semibold transition"
+            >
+              Create Account
+            </Link>
+          )}
         </div>
-      </section>
-
-      {/* Feature Grid */}
-      <section className="max-w-6xl mx-auto px-6 py-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white/5 border border-white/10 p-6 rounded-2xl">
-          <Shield className="w-8 h-8 text-[#34E0D8] mb-4" />
-          <h3 className="text-xl font-bold mb-2">Network & Systems</h3>
-          <p className="text-gray-400 text-sm">Deep dive into routing protocols, ACLs, NAT configurations, and infrastructure security.</p>
-        </div>
-        <div className="bg-white/5 border border-white/10 p-6 rounded-2xl">
-          <Cpu className="w-8 h-8 text-[#2546F0] mb-4" />
-          <h3 className="text-xl font-bold mb-2">Full-Stack Web Dev</h3>
-          <p className="text-gray-400 text-sm">Build dynamic web applications with modern Node.js, JavaScript, and database integration.</p>
-        </div>
-        <div className="bg-white/5 border border-white/10 p-6 rounded-2xl">
-          <BookOpen className="w-8 h-8 text-[#1FC98D] mb-4" />
-          <h3 className="text-xl font-bold mb-2">80% Mastery Gating</h3>
-          <p className="text-gray-400 text-sm">Validate your knowledge with timed module assessments to earn verifiable PDF credentials.</p>
-        </div>
-      </section>
+      </main>
     </div>
   );
 }
