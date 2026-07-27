@@ -12,8 +12,9 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-[#0B1130] text-white flex flex-col">
+      
       {/* ========================================================= */}
-      {/* 1. TOP NAVBAR / HEADER WITH LOGO & SIGN IN BUTTON         */}
+      {/* 1. TOP NAVBAR / HEADER WITH LOGO & NAVIGATION             */}
       {/* ========================================================= */}
       <header className="border-b border-gray-800 bg-[#0B1130]/90 backdrop-blur sticky top-0 z-50 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -58,33 +59,32 @@ export default function Landing() {
       </header>
 
       {/* ========================================================= */}
-      {/* 2. HOMEPAGE HERO & CONTENT SECTION                        */}
+      {/* 2. RESTORED CENTERED HERO BANNER SECTION (image_2.png)     */}
       {/* ========================================================= */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-6 md:p-12 flex flex-col justify-center items-center text-center">
-        <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6">
-          Master Practical Tech Skills with <span className="text-blue-400">Skillforge</span>
-        </h1>
-        <p className="text-gray-400 text-lg max-w-2xl mb-8">
-          Hands-on tracks designed for Systems Administration, Computer Networking, Software Engineering, and Business IT.
-        </p>
+      <main className="flex-1 flex flex-col justify-center items-center text-center px-6 py-12 md:py-20">
+        <div className="max-w-4xl mx-auto flex flex-col items-center">
+          
+          {/* Main Headline */}
+          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-3">
+            Master Practical Tech Skills with <span className="text-blue-400">Skillforge</span>
+          </h1>
 
-        <div className="flex flex-col sm:flex-row gap-4">
+          {/* Subtitle / Description Text */}
+          <p className="text-gray-400 text-base md:text-lg max-w-xl mb-12">
+            Hands-on tracks designed for Systems Administration, Computer Networking, Software Engineering, and Business IT.
+          </p>
+
+          {/* Centered Explore Catalog Button (Restored Design) */}
           <Link
             to="/catalog"
-            className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold shadow-lg transition"
+            className="bg-blue-600 hover:bg-blue-500 text-white px-10 py-3 rounded-md font-semibold transition"
           >
             Explore Course Catalog
           </Link>
-          {!isLoggedIn && (
-            <Link
-              to="/login"
-              className="bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 px-6 py-3 rounded-lg font-semibold transition"
-            >
-              Create Account
-            </Link>
-          )}
+
         </div>
       </main>
+
     </div>
   );
 }
