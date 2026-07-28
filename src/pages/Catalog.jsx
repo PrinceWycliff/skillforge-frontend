@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // Import React Router navigation
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://skillforge-backend-4wd6.onrender.com';
 
@@ -6,6 +7,7 @@ export default function Catalog() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -28,6 +30,20 @@ export default function Catalog() {
 
     fetchCourses();
   }, []);
+
+  // Handle Enrollment / View Course Click
+  const handleEnroll = (courseId) => {
+    // 1. You can save enrolled course IDs in localStorage for instant access
+    const existingEnrollments = JSON.parse(localStorage.getItem('enrolledCourses') || '[]');
+    if (!existingEnrollments.includes(courseId)) {
+      existingEnrollments.push(courseId);
+      localStorage.setItem('enrolledCourses', JSON.stringify(existingEnrollments));
+    }
+
+    // 2. Navigate the user to the course player / detail page
+    // (Adjust the route path to match your App.jsx routes, e.g., /course/${courseId} or /dashboard)
+    navigate(`/course/${courseId}`);
+  };
 
   if (loading) {
     return (
@@ -96,6 +112,7 @@ export default function Catalog() {
               </div>
 
               <button
+                onClick={() => handleEnroll(course.id)}
                 style={{
                   marginTop: '1.5rem',
                   padding: '0.6rem',
@@ -105,6 +122,7 @@ export default function Catalog() {
                   borderRadius: '6px',
                   fontWeight: 'bold',
                   cursor: 'pointer',
+                  transition: 'background-color 0.2s',
                 }}
               >
                 Enroll / View Track
