@@ -82,4 +82,17 @@ export default function Landing() {
 
     </div>
   );
+  <footer style={{ marginTop: '4rem', padding: '2rem 0', borderTop: '1px solid #1e293b', textAlign: 'center', color: '#64748b', fontSize: '0.85rem' }}>
+  <p>© 2026 SkillForge. All rights reserved.</p>
+  
+  {/* Discreet Portal Links */}
+  <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'center', gap: '1.5rem' }}>
+    <a href="/instructor/login" style={{ color: '#475569', textDecoration: 'none' }}>
+      Instructor Portal
+    </a>
+    <a href="/admin/login" style={{ color: '#475569', textDecoration: 'none' }}>
+      Admin Access
+    </a>
+  </div>
+</footer>
 }
