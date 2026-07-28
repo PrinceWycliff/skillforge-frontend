@@ -1,68 +1,121 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 export default function InstructorLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
-    e.preventDefault();
+  // Primary live Render backend with fallback to env variable or localhost
+  const API_BASE = 
+    import.meta.env.VITE_API_BASE_URL || 
+    'https://skillforge-backend-4wd6.onrender.com';
 
-    // Default instructor credentials (you can adjust these)
-    if (email === 'instructor@skillforge.com' && password === 'admin123') {
-      localStorage.setItem('instructor_token', 'authenticated_session_token');
-      navigate('/instructor/studio');
-    } else {
-      setError('Invalid instructor credentials.');
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${API_BASE}/api/instructor/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed. Please check your credentials.');
+      }
+
+      // 1. Store JWT token & user info in localStorage
+      localStorage.setItem('instructor_token', data.token);
+      if (data.user) {
+        localStorage.setItem('instructor_user', JSON.stringify(data.user));
+      }
+
+      // 2. Redirect to Instructor Studio
+      navigate('/instructor/studio', { replace: true });
+
+    } catch (err) {
+      setError(err.message || 'An error occurred during sign in.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh', padding: '1rem' }}>
-      <div style={{ backgroundColor: '#1e293b', padding: '2.5rem', borderRadius: '10px', border: '1px solid #334155', width: '100%', maxWidth: '400px', color: '#fff' }}>
-        <h2 style={{ textAlign: 'center', marginBottom: '0.5rem' }}>Instructor Portal</h2>
-        <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem' }}>Sign in to manage courses and studio content</p>
+    <div className="min-h-screen bg-[#0B1130] text-white flex items-center justify-center px-4 font-sans">
+      <div className="max-w-md w-full bg-[#111936] p-8 rounded-xl border border-gray-800 shadow-2xl">
+        
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-blue-600 font-bold text-xl mb-3 shadow-md">
+            S
+          </div>
+          <h2 className="text-2xl font-bold tracking-tight">Instructor Portal</h2>
+          <p className="text-gray-400 text-sm mt-1">Sign in to manage courses and studio content</p>
+        </div>
 
+        {/* Error Alert */}
         {error && (
-          <div style={{ backgroundColor: '#7f1d1d', color: '#fca5a5', padding: '0.6rem', borderRadius: '6px', marginBottom: '1rem', fontSize: '0.85rem', textAlign: 'center' }}>
+          <div className="mb-6 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm text-center">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label style={{ display: 'block', fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '0.3rem' }}>Email Address</label>
+            <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">
+              Email Address
+            </label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="instructor@skillforge.com"
-              style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#fff', outline: 'none' }}
+              className="w-full px-4 py-3 bg-[#0B1130] border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500 transition"
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '0.3rem' }}>Password</label>
+            <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">
+              Password
+            </label>
             <input
               type="password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#fff', outline: 'none' }}
+              className="w-full px-4 py-3 bg-[#0B1130] border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500 transition"
             />
           </div>
 
           <button
             type="submit"
-            style={{ marginTop: '0.5rem', padding: '0.7rem', backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
+            disabled={loading}
+            className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-semibold text-sm rounded-lg transition shadow-md hover:shadow-blue-500/20"
           >
-            Authenticate & Access Studio
+            {loading ? 'Authenticating...' : 'Sign In to Studio'}
           </button>
         </form>
+
+        {/* Footer Navigation */}
+        <div className="mt-8 pt-6 border-t border-gray-800 text-center text-xs text-gray-500">
+          <Link to="/" className="hover:text-gray-300 transition">
+            ← Return to Main Homepage
+          </Link>
+        </div>
+
       </div>
     </div>
   );
