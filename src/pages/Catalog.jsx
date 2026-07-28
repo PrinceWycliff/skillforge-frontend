@@ -7,6 +7,11 @@ export default function Catalog() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  // Role / Mode State: Set to true if instructor, false if student
+  // (In a full auth system, this would come from your user context e.g., user.role === 'instructor')
+  const [isInstructor, setIsInstructor] = useState(false);
+
   const navigate = useNavigate();
 
   // Fetch Courses from PostgreSQL Database
@@ -32,18 +37,17 @@ export default function Catalog() {
     fetchCourses();
   }, []);
 
-  // Handle Enrollment Action
+  // Handle Enrollment Action (Student)
   const handleEnroll = (courseId) => {
     const existingEnrollments = JSON.parse(localStorage.getItem('enrolledCourses') || '[]');
     if (!existingEnrollments.includes(courseId)) {
       existingEnrollments.push(courseId);
       localStorage.setItem('enrolledCourses', JSON.stringify(existingEnrollments));
     }
-    // Navigate to course content/player page
     navigate(`/course/${courseId}`);
   };
 
-  // Handle Course Deletion (Instructor Action)
+  // Handle Course Deletion (Instructor Only)
   const handleDeleteCourse = async (courseId) => {
     if (!window.confirm('Are you sure you want to delete this course from SkillForge?')) return;
 
@@ -54,7 +58,6 @@ export default function Catalog() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        // Remove course from local UI state
         setCourses((prevCourses) => prevCourses.filter((course) => course.id !== courseId));
       } else {
         alert(data.message || 'Failed to delete course.');
@@ -83,43 +86,62 @@ export default function Catalog() {
 
   return (
     <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', color: '#fff' }}>
-      {/* Header Banner & Instructor Access */}
+      {/* Header & Role Switcher */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h2>Course Catalog</h2>
           <p style={{ color: '#aaa', margin: 0 }}>Explore available course tracks and start learning today.</p>
         </div>
 
-        {/* Quick Route to Instructor Studio */}
-        <button
-          onClick={() => navigate('/instructor/studio')}
-          style={{
-            padding: '0.6rem 1.2rem',
-            backgroundColor: '#2563eb',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '6px',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-          }}
-        >
-          🛠️ Open Instructor Studio
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          {/* Quick toggle to simulate Student vs Instructor view for testing */}
+          <button
+            onClick={() => setIsInstructor(!isInstructor)}
+            style={{
+              padding: '0.4rem 0.8rem',
+              backgroundColor: isInstructor ? '#334155' : '#1e293b',
+              color: '#cbd5e1',
+              border: '1px solid #475569',
+              borderRadius: '6px',
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+            }}
+          >
+            Role: {isInstructor ? '👨‍🏫 Instructor' : '👨‍🎓 Student'} (Click to toggle)
+          </button>
+
+          {/* Instructor-only link to Studio */}
+          {isInstructor && (
+            <button
+              onClick={() => navigate('/instructor/studio')}
+              style={{
+                padding: '0.6rem 1.2rem',
+                backgroundColor: '#2563eb',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '6px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+              }}
+            >
+              🛠️ Instructor Studio
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Course Cards Grid */}
+      {/* Course Grid */}
       {courses.length === 0 ? (
         <div style={{ padding: '3rem', textAlign: 'center', backgroundColor: '#1e293b', borderRadius: '8px', border: '1px solid #334155' }}>
           <p style={{ fontSize: '1.1rem', color: '#cbd5e1' }}>No published courses available yet.</p>
-          <button
-            onClick={() => navigate('/instructor/studio')}
-            style={{ marginTop: '1rem', padding: '0.6rem 1.2rem', backgroundColor: '#16a34a', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
-          >
-            Publish the First Course →
-          </button>
+          {isInstructor && (
+            <button
+              onClick={() => navigate('/instructor/studio')}
+              style={{ marginTop: '1rem', padding: '0.6rem 1.2rem', backgroundColor: '#16a34a', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+            >
+              Publish the First Course →
+            </button>
+          )}
         </div>
       ) : (
         <div
@@ -179,21 +201,24 @@ export default function Catalog() {
                   Enroll / View Track
                 </button>
 
-                <button
-                  onClick={() => handleDeleteCourse(course.id)}
-                  title="Delete Course (Instructor)"
-                  style={{
-                    padding: '0.6rem 0.8rem',
-                    backgroundColor: '#dc2626',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontWeight: 'bold',
-                    cursor: 'pointer',
-                  }}
-                >
-                  🗑️
-                </button>
+                {/* DELETE BUTTON IS STRICTLY RENDERED IF isInstructor === true */}
+                {isInstructor && (
+                  <button
+                    onClick={() => handleDeleteCourse(course.id)}
+                    title="Delete Course"
+                    style={{
+                      padding: '0.6rem 0.8rem',
+                      backgroundColor: '#dc2626',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    🗑️
+                  </button>
+                )}
               </div>
             </div>
           ))}
