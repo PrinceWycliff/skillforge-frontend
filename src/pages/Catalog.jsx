@@ -7,10 +7,6 @@ export default function Catalog() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
-  // Instructor state defaults to FALSE for regular students
-  const [isInstructor, setIsInstructor] = useState(false);
-
   const navigate = useNavigate();
 
   // Fetch Courses
@@ -36,18 +32,7 @@ export default function Catalog() {
     fetchCourses();
   }, []);
 
-  // Secure Instructor Access with a secret passcode prompt
-  const handleEnableInstructorMode = () => {
-    const passcode = prompt('Enter Instructor Passcode:');
-    if (passcode === 'admin123') { // You can change this secret key
-      setIsInstructor(true);
-      alert('Instructor Mode Activated!');
-    } else if (passcode !== null) {
-      alert('Incorrect Passcode. Access denied.');
-    }
-  };
-
-  // Handle Enrollment Action (Students)
+  // Handle Enrollment Action
   const handleEnroll = (courseId) => {
     const existingEnrollments = JSON.parse(localStorage.getItem('enrolledCourses') || '[]');
     if (!existingEnrollments.includes(courseId)) {
@@ -55,33 +40,6 @@ export default function Catalog() {
       localStorage.setItem('enrolledCourses', JSON.stringify(existingEnrollments));
     }
     navigate(`/course/${courseId}`);
-  };
-
-  // Secure Course Deletion
-  const handleDeleteCourse = async (courseId) => {
-    if (!isInstructor) {
-      alert('Unauthorized! Only instructors can delete courses.');
-      return;
-    }
-
-    if (!window.confirm('Are you sure you want to delete this course from SkillForge?')) return;
-
-    try {
-      const res = await fetch(`${API_BASE}/api/courses/${courseId}`, {
-        method: 'DELETE',
-      });
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        setCourses((prevCourses) => prevCourses.filter((course) => course.id !== courseId));
-        alert('Course deleted successfully!');
-      } else {
-        alert(data.message || 'Failed to delete course.');
-      }
-    } catch (err) {
-      console.error('Delete Error:', err);
-      alert('Server error while deleting course.');
-    }
   };
 
   if (loading) {
@@ -103,51 +61,15 @@ export default function Catalog() {
   return (
     <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', color: '#fff' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <h2>Course Catalog</h2>
-          <p style={{ color: '#aaa', margin: 0 }}>Explore available course tracks and start learning today.</p>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          {!isInstructor ? (
-            <button
-              onClick={handleEnableInstructorMode}
-              style={{
-                padding: '0.5rem 1rem',
-                backgroundColor: 'transparent',
-                color: '#94a3b8',
-                border: '1px solid #475569',
-                borderRadius: '6px',
-                fontSize: '0.85rem',
-                cursor: 'pointer',
-              }}
-            >
-              🔒 Instructor Login
-            </button>
-          ) : (
-            <button
-              onClick={() => navigate('/instructor/studio')}
-              style={{
-                padding: '0.6rem 1.2rem',
-                backgroundColor: '#2563eb',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '6px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-              }}
-            >
-              🛠️ Instructor Studio
-            </button>
-          )}
-        </div>
+      <div style={{ marginBottom: '2rem' }}>
+        <h2>Course Catalog</h2>
+        <p style={{ color: '#aaa', margin: 0 }}>Explore available course tracks and start learning today.</p>
       </div>
 
-      {/* Course Cards Grid */}
+      {/* Course Grid */}
       {courses.length === 0 ? (
         <div style={{ padding: '3rem', textAlign: 'center', backgroundColor: '#1e293b', borderRadius: '8px', border: '1px solid #334155' }}>
-          <p style={{ fontSize: '1.1rem', color: '#cbd5e1' }}>No published courses available yet.</p>
+          <p style={{ fontSize: '1.1rem', color: '#cbd5e1' }}>No published courses available yet. Check back soon!</p>
         </div>
       ) : (
         <div
@@ -189,43 +111,23 @@ export default function Catalog() {
                 </p>
               </div>
 
-              {/* Action Buttons */}
-              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.5rem' }}>
-                <button
-                  onClick={() => handleEnroll(course.id)}
-                  style={{
-                    flex: 1,
-                    padding: '0.6rem',
-                    backgroundColor: '#059669',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontWeight: 'bold',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Enroll / View Track
-                </button>
-
-                {/* Delete button only renders if Instructor Mode is active */}
-                {isInstructor && (
-                  <button
-                    onClick={() => handleDeleteCourse(course.id)}
-                    title="Delete Course"
-                    style={{
-                      padding: '0.6rem 0.8rem',
-                      backgroundColor: '#dc2626',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '6px',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    🗑️
-                  </button>
-                )}
-              </div>
+              {/* Student Action */}
+              <button
+                onClick={() => handleEnroll(course.id)}
+                style={{
+                  marginTop: '1.5rem',
+                  padding: '0.6px',
+                  height: '42px',
+                  backgroundColor: '#059669',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                }}
+              >
+                Enroll / View Track
+              </button>
             </div>
           ))}
         </div>
