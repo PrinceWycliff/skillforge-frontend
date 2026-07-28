@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Landing from './pages/Landing'; // Landing / Homepage
 import Catalog from './pages/Catalog'; // Dedicated Course Catalog
 import Player from './pages/Player';
@@ -7,9 +7,16 @@ import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
+import InstructorLogin from './pages/InstructorLogin'; // <-- ADDED INSTRUCTOR LOGIN
 import InstructorStudio from './pages/InstructorStudio';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
+
+// Inline Guard for Instructor Studio (or place in components/InstructorRoute.jsx)
+const InstructorRoute = ({ children }) => {
+  const isAuth = localStorage.getItem('instructor_token');
+  return isAuth ? children : <Navigate to="/instructor/login" replace />;
+};
 
 export default function App() {
   return (
@@ -33,7 +40,15 @@ export default function App() {
           />
 
           {/* Instructor Routes */}
-          <Route path="/instructor/studio" element={<InstructorStudio />} />
+          <Route path="/instructor/login" element={<InstructorLogin />} />
+          <Route 
+            path="/instructor/studio" 
+            element={
+              <InstructorRoute>
+                <InstructorStudio />
+              </InstructorRoute>
+            } 
+          />
 
           {/* Student Protected Routes */}
           <Route 
