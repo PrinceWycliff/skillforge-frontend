@@ -8,13 +8,12 @@ export default function Catalog() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
-  // Role / Mode State: Set to true if instructor, false if student
-  // (In a full auth system, this would come from your user context e.g., user.role === 'instructor')
+  // Instructor state defaults to FALSE for regular students
   const [isInstructor, setIsInstructor] = useState(false);
 
   const navigate = useNavigate();
 
-  // Fetch Courses from PostgreSQL Database
+  // Fetch Courses
   useEffect(() => {
     const fetchCourses = async () => {
       try {
@@ -37,7 +36,18 @@ export default function Catalog() {
     fetchCourses();
   }, []);
 
-  // Handle Enrollment Action (Student)
+  // Secure Instructor Access with a secret passcode prompt
+  const handleEnableInstructorMode = () => {
+    const passcode = prompt('Enter Instructor Passcode:');
+    if (passcode === 'admin123') { // You can change this secret key
+      setIsInstructor(true);
+      alert('Instructor Mode Activated!');
+    } else if (passcode !== null) {
+      alert('Incorrect Passcode. Access denied.');
+    }
+  };
+
+  // Handle Enrollment Action (Students)
   const handleEnroll = (courseId) => {
     const existingEnrollments = JSON.parse(localStorage.getItem('enrolledCourses') || '[]');
     if (!existingEnrollments.includes(courseId)) {
@@ -47,8 +57,13 @@ export default function Catalog() {
     navigate(`/course/${courseId}`);
   };
 
-  // Handle Course Deletion (Instructor Only)
+  // Secure Course Deletion
   const handleDeleteCourse = async (courseId) => {
+    if (!isInstructor) {
+      alert('Unauthorized! Only instructors can delete courses.');
+      return;
+    }
+
     if (!window.confirm('Are you sure you want to delete this course from SkillForge?')) return;
 
     try {
@@ -59,12 +74,13 @@ export default function Catalog() {
 
       if (res.ok && data.success) {
         setCourses((prevCourses) => prevCourses.filter((course) => course.id !== courseId));
+        alert('Course deleted successfully!');
       } else {
         alert(data.message || 'Failed to delete course.');
       }
     } catch (err) {
       console.error('Delete Error:', err);
-      alert('Server error while attempting to delete course.');
+      alert('Server error while deleting course.');
     }
   };
 
@@ -86,7 +102,7 @@ export default function Catalog() {
 
   return (
     <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', color: '#fff' }}>
-      {/* Header & Role Switcher */}
+      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h2>Course Catalog</h2>
@@ -94,24 +110,22 @@ export default function Catalog() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          {/* Quick toggle to simulate Student vs Instructor view for testing */}
-          <button
-            onClick={() => setIsInstructor(!isInstructor)}
-            style={{
-              padding: '0.4rem 0.8rem',
-              backgroundColor: isInstructor ? '#334155' : '#1e293b',
-              color: '#cbd5e1',
-              border: '1px solid #475569',
-              borderRadius: '6px',
-              fontSize: '0.85rem',
-              cursor: 'pointer',
-            }}
-          >
-            Role: {isInstructor ? '👨‍🏫 Instructor' : '👨‍🎓 Student'} (Click to toggle)
-          </button>
-
-          {/* Instructor-only link to Studio */}
-          {isInstructor && (
+          {!isInstructor ? (
+            <button
+              onClick={handleEnableInstructorMode}
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: 'transparent',
+                color: '#94a3b8',
+                border: '1px solid #475569',
+                borderRadius: '6px',
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+              }}
+            >
+              🔒 Instructor Login
+            </button>
+          ) : (
             <button
               onClick={() => navigate('/instructor/studio')}
               style={{
@@ -130,18 +144,10 @@ export default function Catalog() {
         </div>
       </div>
 
-      {/* Course Grid */}
+      {/* Course Cards Grid */}
       {courses.length === 0 ? (
         <div style={{ padding: '3rem', textAlign: 'center', backgroundColor: '#1e293b', borderRadius: '8px', border: '1px solid #334155' }}>
           <p style={{ fontSize: '1.1rem', color: '#cbd5e1' }}>No published courses available yet.</p>
-          {isInstructor && (
-            <button
-              onClick={() => navigate('/instructor/studio')}
-              style={{ marginTop: '1rem', padding: '0.6rem 1.2rem', backgroundColor: '#16a34a', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
-            >
-              Publish the First Course →
-            </button>
-          )}
         </div>
       ) : (
         <div
@@ -201,7 +207,7 @@ export default function Catalog() {
                   Enroll / View Track
                 </button>
 
-                {/* DELETE BUTTON IS STRICTLY RENDERED IF isInstructor === true */}
+                {/* Delete button only renders if Instructor Mode is active */}
                 {isInstructor && (
                   <button
                     onClick={() => handleDeleteCourse(course.id)}
