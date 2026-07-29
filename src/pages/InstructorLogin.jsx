@@ -9,10 +9,8 @@ export default function InstructorLogin() {
 
   const navigate = useNavigate();
 
-  // Primary live Render backend with fallback to env variable or localhost
-  const API_BASE = 
-    import.meta.env.VITE_API_BASE_URL || 
-    'https://skillforge-backend-4wd6.onrender.com';
+  // Use environment variable or default to your live Render backend URL
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://skillforge-backend-4wd6.onrender.com';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,6 +18,7 @@ export default function InstructorLogin() {
     setLoading(true);
 
     try {
+      // Direct API call to backend database
       const response = await fetch(`${API_BASE}/api/instructor/login`, {
         method: 'POST',
         headers: {
@@ -28,23 +27,26 @@ export default function InstructorLogin() {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(data.message || 'Login failed. Please check your credentials.');
+        throw new Error(data.message || 'Invalid instructor credentials.');
       }
 
-      // 1. Store JWT token & user info in localStorage
-      localStorage.setItem('instructor_token', data.token);
+      // Store JWT token & instructor info returned from the server
+      if (data.token) {
+        localStorage.setItem('instructor_token', data.token);
+      }
       if (data.user) {
         localStorage.setItem('instructor_user', JSON.stringify(data.user));
       }
 
-      // 2. Redirect to Instructor Studio
+      // Redirect directly to Instructor Studio
       navigate('/instructor/studio', { replace: true });
 
     } catch (err) {
-      setError(err.message || 'An error occurred during sign in.');
+      console.error('Login Error:', err);
+      setError(err.message || 'Connection error. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -81,7 +83,7 @@ export default function InstructorLogin() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="instructor@skillforge.com"
+              placeholder="instructor@domain.com"
               className="w-full px-4 py-3 bg-[#0B1130] border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500 transition"
             />
           </div>
@@ -105,7 +107,7 @@ export default function InstructorLogin() {
             disabled={loading}
             className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-semibold text-sm rounded-lg transition shadow-md hover:shadow-blue-500/20"
           >
-            {loading ? 'Authenticating...' : 'Sign In to Studio'}
+            {loading ? 'Authenticating...' : 'Authenticate & Access Studio'}
           </button>
         </form>
 
