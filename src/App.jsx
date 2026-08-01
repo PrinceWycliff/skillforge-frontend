@@ -11,6 +11,7 @@ import InstructorLogin from './pages/InstructorLogin'; // <-- ADDED INSTRUCTOR L
 import InstructorStudio from './pages/InstructorStudio';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
+import Register from './pages/Register';
 
 // Inline Guard for Instructor Studio (or place in components/InstructorRoute.jsx)
 const InstructorRoute = ({ children }) => {
@@ -27,6 +28,7 @@ export default function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/catalog" element={<Catalog />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
           
           {/* Admin Routes */}
           <Route path="/admin/login" element={<AdminLogin />} />

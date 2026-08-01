@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { loginWithGoogle, loginWithEmail } from '../firebase'; // Imports directly from your working firebase.js
+// Updated relative import to point to src/config/firebase.js
+import { loginWithGoogle, loginWithEmail } from '../config/firebase';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -10,7 +11,7 @@ export default function Login() {
 
   const navigate = useNavigate();
 
-  // 1. Google Auth using your firebase.js helper
+  // Google Authentication Handler
   const handleGoogleAuth = async () => {
     setError('');
     setLoading(true);
@@ -20,7 +21,6 @@ export default function Login() {
       const user = result.user;
       const idToken = await user.getIdToken();
 
-      // Store Firebase user session locally
       localStorage.setItem('token', idToken);
       localStorage.setItem(
         'user',
@@ -32,17 +32,16 @@ export default function Login() {
         })
       );
 
-      // Redirect to catalog
       navigate('/catalog', { replace: true });
     } catch (err) {
       console.error('Google Auth Error:', err);
-      setError('Google sign-in failed. Please try again or check browser popups.');
+      setError('Google sign-in failed. Please try again or check browser popup settings.');
     } finally {
       setLoading(false);
     }
   };
 
-  // 2. Email/Password Auth using your firebase.js helper
+  // Email/Password Authentication Handler
   const handleEmailLogin = async (e) => {
     e.preventDefault();
     setError('');
@@ -53,7 +52,6 @@ export default function Login() {
       const user = result.user;
       const idToken = await user.getIdToken();
 
-      // Store Firebase user session locally
       localStorage.setItem('token', idToken);
       localStorage.setItem(
         'user',
@@ -63,11 +61,14 @@ export default function Login() {
         })
       );
 
-      // Redirect to catalog
       navigate('/catalog', { replace: true });
     } catch (err) {
       console.error('Email Login Error:', err);
-      if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+      if (
+        err.code === 'auth/invalid-credential' ||
+        err.code === 'auth/user-not-found' ||
+        err.code === 'auth/wrong-password'
+      ) {
         setError('Invalid email or password. Please try again.');
       } else {
         setError(err.message || 'Unable to log in. Please try again.');
@@ -86,14 +87,14 @@ export default function Login() {
           <h2 className="text-2xl font-bold tracking-tight">Sign in to Skillforge</h2>
         </div>
 
-        {/* Error Banner */}
+        {/* Error Message */}
         {error && (
           <div className="mb-6 p-3 bg-red-500/20 border border-red-500/40 rounded-lg text-red-300 text-xs text-center font-medium">
             {error}
           </div>
         )}
 
-        {/* Google Sign-In Button */}
+        {/* Google Sign-In */}
         <button
           type="button"
           onClick={handleGoogleAuth}
@@ -117,7 +118,7 @@ export default function Login() {
           </span>
         </div>
 
-        {/* Email & Password Form */}
+        {/* Login Form */}
         <form onSubmit={handleEmailLogin} className="space-y-4">
           <div>
             <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
@@ -156,7 +157,7 @@ export default function Login() {
           </button>
         </form>
 
-        {/* Create Account Link */}
+        {/* Create One Link */}
         <div className="mt-6 text-center text-xs text-gray-400">
           Don't have an account?{' '}
           <Link to="/register" className="text-blue-400 hover:underline font-semibold text-sm inline-block ml-1">
