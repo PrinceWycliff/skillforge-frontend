@@ -1,32 +1,26 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { auth, googleProvider } from '../firebaseConfig';
-import { signInWithPopup, signInWithRedirect, sendSignInLinkToEmail } from 'firebase/auth';
+import { loginWithGoogle, loginWithEmail } from '../firebase'; // Imports directly from your working firebase.js
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [useMagicLink, setUseMagicLink] = useState(false);
   const [error, setError] = useState('');
-  const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
 
-  const RAW_API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://skillforge-backend-4wd6.onrender.com';
-  const API_BASE = RAW_API_BASE.replace(/\/$/, '');
-
-  // 1. Google Authentication with Popup Fallback
+  // 1. Google Auth using your firebase.js helper
   const handleGoogleAuth = async () => {
     setError('');
-    setInfo('');
     setLoading(true);
 
     try {
-      const result = await signInWithPopup(auth, googleProvider);
+      const result = await loginWithGoogle();
       const user = result.user;
       const idToken = await user.getIdToken();
 
+      // Store Firebase user session locally
       localStorage.setItem('token', idToken);
       localStorage.setItem(
         'user',
@@ -34,94 +28,50 @@ export default function Login() {
           email: user.email,
           name: user.displayName,
           photo: user.photoURL,
+          uid: user.uid,
         })
       );
 
+      // Redirect to catalog
       navigate('/catalog', { replace: true });
     } catch (err) {
-      console.error('Google Popup Auth Error:', err);
-
-      // If popup is blocked by browser or closed by user, try redirect mode
-      if (err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user') {
-        try {
-          await signInWithRedirect(auth, googleProvider);
-          return;
-        } catch (redirectErr) {
-          console.error('Google Redirect Auth Error:', redirectErr);
-        }
-      }
-
-      setError('Google sign-in failed. Please try again or check browser popup permissions.');
+      console.error('Google Auth Error:', err);
+      setError('Google sign-in failed. Please try again or check browser popups.');
     } finally {
       setLoading(false);
     }
   };
 
-  // 2. Email Magic Link Handler
-  const handleSendMagicLink = async (e) => {
+  // 2. Email/Password Auth using your firebase.js helper
+  const handleEmailLogin = async (e) => {
     e.preventDefault();
     setError('');
-    setInfo('');
-
-    if (!email) {
-      setError('Please enter your email address.');
-      return;
-    }
-
-    setLoading(true);
-
-    const actionCodeSettings = {
-      url: `${window.location.origin}/login`,
-      handleCodeInApp: true,
-    };
-
-    try {
-      await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-      window.localStorage.setItem('emailForSignIn', email);
-      setInfo(`Sign-in link sent! Check ${email} to complete your login.`);
-    } catch (err) {
-      console.error('Magic Link Error:', err);
-      setError(err.message || 'Failed to send login link. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 3. Standard Password Auth Handler
-  const handlePasswordLogin = async (e) => {
-    e.preventDefault();
-    setError('');
-    setInfo('');
     setLoading(true);
 
     try {
-      let response = await fetch(`${API_BASE}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+      const result = await loginWithEmail(email, password);
+      const user = result.user;
+      const idToken = await user.getIdToken();
 
-      if (response.status === 404) {
-        response = await fetch(`${API_BASE}/api/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
-        });
-      }
+      // Store Firebase user session locally
+      localStorage.setItem('token', idToken);
+      localStorage.setItem(
+        'user',
+        JSON.stringify({
+          email: user.email,
+          uid: user.uid,
+        })
+      );
 
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Invalid login credentials.');
-      }
-
-      localStorage.setItem('token', data.token || 'user-logged-in');
-      localStorage.setItem('user', JSON.stringify(data.user || { email }));
-
+      // Redirect to catalog
       navigate('/catalog', { replace: true });
     } catch (err) {
-      console.error('Password Login Error:', err);
-      setError(err.message || 'Unable to log in. Please check your inputs.');
+      console.error('Email Login Error:', err);
+      if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+        setError('Invalid email or password. Please try again.');
+      } else {
+        setError(err.message || 'Unable to log in. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -136,15 +86,10 @@ export default function Login() {
           <h2 className="text-2xl font-bold tracking-tight">Sign in to Skillforge</h2>
         </div>
 
-        {/* Error / Success Alerts */}
+        {/* Error Banner */}
         {error && (
           <div className="mb-6 p-3 bg-red-500/20 border border-red-500/40 rounded-lg text-red-300 text-xs text-center font-medium">
             {error}
-          </div>
-        )}
-        {info && (
-          <div className="mb-6 p-3 bg-emerald-500/20 border border-emerald-500/40 rounded-lg text-emerald-300 text-xs text-center font-medium">
-            {info}
           </div>
         )}
 
@@ -172,20 +117,8 @@ export default function Login() {
           </span>
         </div>
 
-        {/* Auth Mode Toggle */}
-        <div className="flex justify-between items-center mb-4 text-xs">
-          <span className="text-gray-400 font-medium">Authentication Method:</span>
-          <button
-            type="button"
-            onClick={() => setUseMagicLink(!useMagicLink)}
-            className="text-blue-400 hover:underline focus:outline-none"
-          >
-            {useMagicLink ? 'Use Password' : 'Send Email Link (Passwordless)'}
-          </button>
-        </div>
-
-        {/* Login Form */}
-        <form onSubmit={useMagicLink ? handleSendMagicLink : handlePasswordLogin} className="space-y-4">
+        {/* Email & Password Form */}
+        <form onSubmit={handleEmailLogin} className="space-y-4">
           <div>
             <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
               Email
@@ -200,32 +133,30 @@ export default function Login() {
             />
           </div>
 
-          {!useMagicLink && (
-            <div>
-              <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
-                Password
-              </label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-4 py-2.5 bg-[#0B1130] border border-gray-800 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500 transition"
-              />
-            </div>
-          )}
+          <div>
+            <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+              Password
+            </label>
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              className="w-full px-4 py-2.5 bg-[#0B1130] border border-gray-800 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500 transition"
+            />
+          </div>
 
           <button
             type="submit"
             disabled={loading}
             className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 text-white font-semibold text-sm rounded-lg transition shadow-md mt-2 cursor-pointer"
           >
-            {loading ? 'Processing...' : useMagicLink ? 'Send Login Link to Email' : 'Sign In'}
+            {loading ? 'Authenticating...' : 'Sign In'}
           </button>
         </form>
 
-        {/* Working Register Link */}
+        {/* Create Account Link */}
         <div className="mt-6 text-center text-xs text-gray-400">
           Don't have an account?{' '}
           <Link to="/register" className="text-blue-400 hover:underline font-semibold text-sm inline-block ml-1">
