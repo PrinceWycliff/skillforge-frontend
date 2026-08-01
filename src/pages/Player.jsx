@@ -1,27 +1,63 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 
 export default function Player() {
   const { courseId } = useParams();
 
-  // Test lessons using music video embeds
-  const [lessons] = useState([
-    {
-      id: 1,
-      title: 'Track 1: Networking Basics & Flow',
-      embedUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ', // Sample video link
-      duration: '3:30',
-    },
-    {
-      id: 2,
-      title: 'Track 2: Core Protocols in Action',
-      embedUrl: 'https://www.youtube.com/embed/3JZ_D3ELwOQ',
-      duration: '4:15',
-    },
-  ]);
-
-  const [activeLesson, setActiveLesson] = useState(lessons[0]);
+  const [course, setCourse] = useState(null);
+  const [lessons, setLessons] = useState([]);
+  const [activeLesson, setActiveLesson] = useState(null);
   const [completedLessons, setCompletedLessons] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const RAW_API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://skillforge-backend-4wd6.onrender.com';
+  const API_BASE = RAW_API_BASE.replace(/\/$/, '');
+
+  useEffect(() => {
+    const fetchCourseDetails = async () => {
+      setLoading(true);
+      setError('');
+
+      try {
+        const response = await fetch(`${API_BASE}/api/courses/${courseId}`);
+        if (!response.ok) {
+          throw new Error('Failed to load course details');
+        }
+        const data = await response.json();
+        
+        setCourse(data);
+
+        // If backend provides modules/lessons, use them; otherwise create fallback from course video
+        if (data.lessons && data.lessons.length > 0) {
+          setLessons(data.lessons);
+          setActiveLesson(data.lessons[0]);
+        } else if (data.modules && data.modules.length > 0) {
+          setLessons(data.modules);
+          setActiveLesson(data.modules[0]);
+        } else {
+          // Fallback single module using course dynamic info
+          const defaultLesson = {
+            id: 1,
+            title: data.title || `Module 1: Introduction to Course #${courseId}`,
+            embedUrl: data.videoUrl || data.embedUrl || 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+            duration: data.duration || '10:00',
+          };
+          setLessons([defaultLesson]);
+          setActiveLesson(defaultLesson);
+        }
+      } catch (err) {
+        console.error('Error fetching course in Player:', err);
+        setError('Could not load course content. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (courseId) {
+      fetchCourseDetails();
+    }
+  }, [courseId, API_BASE]);
 
   const toggleComplete = (id) => {
     if (completedLessons.includes(id)) {
@@ -31,9 +67,37 @@ export default function Player() {
     }
   };
 
-  const progressPercent = Math.round(
-    (completedLessons.length / lessons.length) * 100
-  );
+  const progressPercent = lessons.length > 0
+    ? Math.round((completedLessons.length / lessons.length) * 100)
+    : 0;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0B1130] text-white flex items-center justify-center font-sans">
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-sm text-gray-400">Loading Course Player...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !activeLesson) {
+    return (
+      <div className="min-h-screen bg-[#0B1130] text-white flex items-center justify-center font-sans p-4">
+        <div className="max-w-md w-full bg-[#111936] p-6 rounded-xl border border-gray-800 text-center">
+          <h2 className="text-lg font-bold text-red-400 mb-2">Error Loading Course</h2>
+          <p className="text-xs text-gray-400 mb-6">{error || 'Course not found.'}</p>
+          <Link
+            to="/catalog"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold"
+          >
+            Back to Catalog
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0B1130] text-white flex flex-col font-sans">
@@ -41,13 +105,13 @@ export default function Player() {
       <header className="border-b border-gray-800 bg-[#0B1130]/90 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link
-            to="/dashboard"
+            to="/catalog"
             className="text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-1.5 rounded-lg border border-gray-700 transition"
           >
-            ← Back to Dashboard
+            ← Back to Catalog
           </Link>
-          <h1 className="text-lg font-bold text-white">
-            Skill Track #{courseId}
+          <h1 className="text-lg font-bold text-white truncate max-w-md">
+            {course?.title || `Course #${courseId}`}
           </h1>
         </div>
 

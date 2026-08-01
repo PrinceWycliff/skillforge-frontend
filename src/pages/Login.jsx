@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-// Updated relative import to point to src/config/firebase.js
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { loginWithGoogle, loginWithEmail } from '../config/firebase';
 
 export default function Login() {
@@ -10,6 +9,10 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Smart Redirection Target: Default to Home ('/') unless coming specifically from Catalog trigger
+  const targetDestination = location.state?.from === 'catalog' ? '/catalog' : '/';
 
   // Google Authentication Handler
   const handleGoogleAuth = async () => {
@@ -32,7 +35,7 @@ export default function Login() {
         })
       );
 
-      navigate('/catalog', { replace: true });
+      navigate(targetDestination, { replace: true });
     } catch (err) {
       console.error('Google Auth Error:', err);
       setError('Google sign-in failed. Please try again or check browser popup settings.');
@@ -61,7 +64,7 @@ export default function Login() {
         })
       );
 
-      navigate('/catalog', { replace: true });
+      navigate(targetDestination, { replace: true });
     } catch (err) {
       console.error('Email Login Error:', err);
       if (
@@ -157,7 +160,7 @@ export default function Login() {
           </button>
         </form>
 
-        {/* Create One Link */}
+        {/* Create Account Link */}
         <div className="mt-6 text-center text-xs text-gray-400">
           Don't have an account?{' '}
           <Link to="/register" className="text-blue-400 hover:underline font-semibold text-sm inline-block ml-1">

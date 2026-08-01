@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { registerWithEmail } from '../config/firebase';
+import { registerWithEmail, sendVerificationCode } from '../config/firebase';
 
 export default function Register() {
   const [email, setEmail] = useState('');
@@ -8,6 +8,7 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
 
   const navigate = useNavigate();
 
@@ -23,20 +24,15 @@ export default function Register() {
     setLoading(true);
 
     try {
+      // 1. Create User
       const result = await registerWithEmail(email, password);
       const user = result.user;
-      const idToken = await user.getIdToken();
 
-      localStorage.setItem('token', idToken);
-      localStorage.setItem(
-        'user',
-        JSON.stringify({
-          email: user.email,
-          uid: user.uid,
-        })
-      );
+      // 2. Send Email Verification Token/Link
+      await sendVerificationCode(user);
 
-      navigate('/catalog', { replace: true });
+      // 3. Show Verification Window/Modal (Do NOT redirect to catalog or set session)
+      setShowVerificationModal(true);
     } catch (err) {
       console.error('Registration Error:', err);
       if (err.code === 'auth/email-already-in-use') {
@@ -51,8 +47,14 @@ export default function Register() {
     }
   };
 
+  const handleModalProceedToLogin = () => {
+    setShowVerificationModal(false);
+    // Redirect to login page after successful registration setup
+    navigate('/login', { replace: true });
+  };
+
   return (
-    <div className="min-h-screen bg-[#0B1130] text-white flex items-center justify-center px-4 font-sans">
+    <div className="min-h-screen bg-[#0B1130] text-white flex items-center justify-center px-4 font-sans relative">
       <div className="max-w-md w-full bg-[#111936] p-8 rounded-xl border border-gray-800 shadow-2xl">
         
         <div className="text-center mb-6">
@@ -123,8 +125,30 @@ export default function Register() {
             Sign in
           </Link>
         </div>
-
       </div>
+
+      {/* Verification Code/Email Modal */}
+      {showVerificationModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-[#111936] border border-gray-800 p-6 rounded-xl max-w-sm w-full text-center shadow-2xl">
+            <div className="w-12 h-12 bg-blue-600/20 text-blue-400 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 002-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+              </svg>
+            </div>
+            <h3 className="text-lg font-bold text-white mb-2">Verify Your Email</h3>
+            <p className="text-xs text-gray-300 mb-6">
+              We have sent an authentication link/code to <span className="text-blue-400 font-semibold">{email}</span>. Please check your inbox and confirm your email.
+            </p>
+            <button
+              onClick={handleModalProceedToLogin}
+              className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-lg transition"
+            >
+              Proceed to Login
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
-}
+}   

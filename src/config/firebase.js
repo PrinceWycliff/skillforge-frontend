@@ -4,7 +4,8 @@ import {
   GoogleAuthProvider, 
   signInWithPopup, 
   signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword 
+  createUserWithEmailAndPassword,
+  sendEmailVerification
 } from "firebase/auth";
 
 const firebaseConfig = {
@@ -20,9 +21,10 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
-// Export the missing helper functions needed by Login.jsx
+// Auth helper exports
 export const loginWithGoogle = () => signInWithPopup(auth, googleProvider);
 export const loginWithEmail = (email, password) => signInWithEmailAndPassword(auth, email, password);
 export const registerWithEmail = (email, password) => createUserWithEmailAndPassword(auth, email, password);
+export const sendVerificationCode = (user) => sendEmailVerification(user);
 
 console.log("Loaded Firebase API Key:", import.meta.env.VITE_FIREBASE_API_KEY);
