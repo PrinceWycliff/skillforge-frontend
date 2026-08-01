@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { auth, googleProvider } from '../firebaseConfig';
+import { signInWithPopup } from 'firebase/auth';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -13,6 +15,7 @@ export default function Login() {
   const RAW_API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://skillforge-backend-4wd6.onrender.com';
   const API_BASE = RAW_API_BASE.replace(/\/$/, '');
 
+  // Handle Standard Email/Password Login
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -52,9 +55,31 @@ export default function Login() {
     }
   };
 
-  const handleGoogleAuth = () => {
-    // Connect to your Google OAuth endpoint or Firebase trigger here
-    console.log('Google Auth Triggered');
+  // Handle Firebase Google Sign-In
+  const handleGoogleAuth = async () => {
+    setError('');
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      const idToken = await user.getIdToken();
+
+      // Store token and user data
+      localStorage.setItem('token', idToken);
+      localStorage.setItem(
+        'user',
+        JSON.stringify({
+          email: user.email,
+          name: user.displayName,
+          photo: user.photoURL,
+        })
+      );
+
+      // Redirect to catalog
+      navigate('/catalog', { replace: true });
+    } catch (err) {
+      console.error('Google Auth Error:', err);
+      setError('Google sign-in failed. Please try again.');
+    }
   };
 
   return (
@@ -77,7 +102,7 @@ export default function Login() {
         <button
           type="button"
           onClick={handleGoogleAuth}
-          className="w-full py-2.5 px-4 bg-white hover:bg-gray-100 text-gray-900 font-semibold text-sm rounded-lg flex items-center justify-center gap-3 transition shadow-sm mb-6"
+          className="w-full py-2.5 px-4 bg-white hover:bg-gray-100 text-gray-900 font-semibold text-sm rounded-lg flex items-center justify-center gap-3 transition shadow-sm mb-6 cursor-pointer"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
@@ -94,7 +119,7 @@ export default function Login() {
             />
             <path
               fill="#EA4335"
-              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.47 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
             />
           </svg>
           Continue with Google
