@@ -14,7 +14,6 @@ export default function Player() {
   const RAW_API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://skillforge-backend-4wd6.onrender.com';
   const API_BASE = RAW_API_BASE.replace(/\/$/, '');
 
-  // Helper function to format YouTube URLs into Embed format
   const formatEmbedUrl = (url) => {
     if (!url) return 'https://www.youtube.com/embed/dQw4w9WgXcQ';
     if (url.includes('youtube.com/embed/')) return url;
@@ -43,6 +42,32 @@ export default function Player() {
 
         const response = await fetch(`${API_BASE}/api/courses/${courseId}`, { headers });
 
+        if (response.status === 404) {
+          // Fallback for static/template courses not yet seeded in backend DB
+          const fallbackCourse = {
+            id: courseId,
+            title: `Skill Track Course`,
+            lessons: [
+              {
+                id: 1,
+                title: 'Track 1: Networking Basics & Flow',
+                embedUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+                duration: '3:30',
+              },
+              {
+                id: 2,
+                title: 'Track 2: Core Protocols in Action',
+                embedUrl: 'https://www.youtube.com/embed/3JZ_D3ELwOQ',
+                duration: '4:15',
+              },
+            ],
+          };
+          setCourse(fallbackCourse);
+          setLessons(fallbackCourse.lessons);
+          setActiveLesson(fallbackCourse.lessons[0]);
+          return;
+        }
+
         if (!response.ok) {
           throw new Error(`Failed to load course details (Status: ${response.status})`);
         }
@@ -50,7 +75,6 @@ export default function Player() {
         const data = await response.json();
         setCourse(data);
 
-        // Normalize lessons array from backend responses
         let loadedLessons = [];
 
         if (Array.isArray(data.lessons) && data.lessons.length > 0) {
@@ -68,7 +92,6 @@ export default function Player() {
             duration: item.duration || '10:00',
           }));
         } else {
-          // Default single module setup if no structured lessons array exists
           loadedLessons = [
             {
               id: 1,
@@ -83,7 +106,7 @@ export default function Player() {
         setActiveLesson(loadedLessons[0]);
       } catch (err) {
         console.error('Error fetching course in Player:', err);
-        setError(err.message || 'Could not load course content. Please try again.');
+        setError(err.message || 'Could not load course content.');
       } finally {
         setLoading(false);
       }
@@ -91,9 +114,6 @@ export default function Player() {
 
     if (courseId) {
       fetchCourseDetails();
-    } else {
-      setError('No course ID provided.');
-      setLoading(false);
     }
   }, [courseId, API_BASE]);
 
@@ -139,7 +159,6 @@ export default function Player() {
 
   return (
     <div className="min-h-screen bg-[#0B1130] text-white flex flex-col font-sans">
-      {/* Top Navigation Bar */}
       <header className="border-b border-gray-800 bg-[#0B1130]/90 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link
@@ -153,7 +172,6 @@ export default function Player() {
           </h1>
         </div>
 
-        {/* Course Progress Bar */}
         <div className="flex items-center gap-3">
           <span className="text-xs text-gray-400">Progress: {progressPercent}%</span>
           <div className="w-32 bg-gray-800 h-2 rounded-full overflow-hidden border border-gray-700">
@@ -165,10 +183,7 @@ export default function Player() {
         </div>
       </header>
 
-      {/* Main Video & Modules Layout */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-6 p-6 max-w-7xl w-full mx-auto">
-        
-        {/* Main Video Viewport */}
         <div className="lg:col-span-3 flex flex-col">
           <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-gray-800">
             <iframe
@@ -197,7 +212,6 @@ export default function Player() {
           </div>
         </div>
 
-        {/* Lessons/Modules Sidebar */}
         <div className="bg-gray-800/60 border border-gray-700/70 rounded-xl p-4 flex flex-col gap-3 h-fit">
           <h3 className="text-sm font-semibold text-gray-300 mb-1">
             Course Modules ({lessons.length})
@@ -234,7 +248,6 @@ export default function Player() {
             })}
           </div>
         </div>
-
       </div>
     </div>
   );
