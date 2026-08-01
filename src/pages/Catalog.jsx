@@ -39,7 +39,8 @@ export default function Catalog() {
       existingEnrollments.push(courseId);
       localStorage.setItem('enrolledCourses', JSON.stringify(existingEnrollments));
     }
-    navigate(`/course/${courseId}`);
+    // Fixed route destination: navigate to /player/
+    navigate(`/player/${courseId}`);
   };
 
   if (loading) {
@@ -116,7 +117,7 @@ export default function Catalog() {
                 onClick={() => handleEnroll(course.id)}
                 style={{
                   marginTop: '1.5rem',
-                  padding: '0.6px',
+                  padding: '0.6rem',
                   height: '42px',
                   backgroundColor: '#059669',
                   color: '#fff',
