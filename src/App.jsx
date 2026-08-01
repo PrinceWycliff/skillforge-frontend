@@ -7,13 +7,13 @@ import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
-import InstructorLogin from './pages/InstructorLogin'; // <-- ADDED INSTRUCTOR LOGIN
+import InstructorLogin from './pages/InstructorLogin';
 import InstructorStudio from './pages/InstructorStudio';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import Register from './pages/Register';
 
-// Inline Guard for Instructor Studio (or place in components/InstructorRoute.jsx)
+// Inline Guard for Instructor Studio
 const InstructorRoute = ({ children }) => {
   const isAuth = localStorage.getItem('instructor_token');
   return isAuth ? children : <Navigate to="/instructor/login" replace />;
@@ -29,7 +29,6 @@ export default function App() {
           <Route path="/catalog" element={<Catalog />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/player/:courseId" element={<Player />} />
           
           {/* Admin Routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
@@ -70,6 +69,9 @@ export default function App() {
               </ProtectedRoute>
             } 
           />
+
+          {/* Fallback Catch-all Route */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
     </Router>

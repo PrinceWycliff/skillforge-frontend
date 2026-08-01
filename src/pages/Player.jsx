@@ -14,41 +14,76 @@ export default function Player() {
   const RAW_API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://skillforge-backend-4wd6.onrender.com';
   const API_BASE = RAW_API_BASE.replace(/\/$/, '');
 
+  // Helper function to format YouTube URLs into Embed format
+  const formatEmbedUrl = (url) => {
+    if (!url) return 'https://www.youtube.com/embed/dQw4w9WgXcQ';
+    if (url.includes('youtube.com/embed/')) return url;
+    if (url.includes('watch?v=')) {
+      const videoId = url.split('watch?v=')[1]?.split('&')[0];
+      return `https://www.youtube.com/embed/${videoId}`;
+    }
+    if (url.includes('youtu.be/')) {
+      const videoId = url.split('youtu.be/')[1]?.split('?')[0];
+      return `https://www.youtube.com/embed/${videoId}`;
+    }
+    return url;
+  };
+
   useEffect(() => {
     const fetchCourseDetails = async () => {
       setLoading(true);
       setError('');
 
       try {
-        const response = await fetch(`${API_BASE}/api/courses/${courseId}`);
+        const token = localStorage.getItem('token');
+        const headers = {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        };
+
+        const response = await fetch(`${API_BASE}/api/courses/${courseId}`, { headers });
+
         if (!response.ok) {
-          throw new Error('Failed to load course details');
+          throw new Error(`Failed to load course details (Status: ${response.status})`);
         }
-        const data = await response.json();
         
+        const data = await response.json();
         setCourse(data);
 
-        // If backend provides modules/lessons, use them; otherwise create fallback from course video
-        if (data.lessons && data.lessons.length > 0) {
-          setLessons(data.lessons);
-          setActiveLesson(data.lessons[0]);
-        } else if (data.modules && data.modules.length > 0) {
-          setLessons(data.modules);
-          setActiveLesson(data.modules[0]);
+        // Normalize lessons array from backend responses
+        let loadedLessons = [];
+
+        if (Array.isArray(data.lessons) && data.lessons.length > 0) {
+          loadedLessons = data.lessons.map((item, idx) => ({
+            id: item._id || item.id || idx + 1,
+            title: item.title || `Lesson ${idx + 1}`,
+            embedUrl: formatEmbedUrl(item.videoUrl || item.embedUrl),
+            duration: item.duration || '10:00',
+          }));
+        } else if (Array.isArray(data.modules) && data.modules.length > 0) {
+          loadedLessons = data.modules.map((item, idx) => ({
+            id: item._id || item.id || idx + 1,
+            title: item.title || `Module ${idx + 1}`,
+            embedUrl: formatEmbedUrl(item.videoUrl || item.embedUrl),
+            duration: item.duration || '10:00',
+          }));
         } else {
-          // Fallback single module using course dynamic info
-          const defaultLesson = {
-            id: 1,
-            title: data.title || `Module 1: Introduction to Course #${courseId}`,
-            embedUrl: data.videoUrl || data.embedUrl || 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-            duration: data.duration || '10:00',
-          };
-          setLessons([defaultLesson]);
-          setActiveLesson(defaultLesson);
+          // Default single module setup if no structured lessons array exists
+          loadedLessons = [
+            {
+              id: 1,
+              title: data.title ? `Overview: ${data.title}` : `Module 1: Intro`,
+              embedUrl: formatEmbedUrl(data.videoUrl || data.embedUrl),
+              duration: data.duration || '10:00',
+            },
+          ];
         }
+
+        setLessons(loadedLessons);
+        setActiveLesson(loadedLessons[0]);
       } catch (err) {
         console.error('Error fetching course in Player:', err);
-        setError('Could not load course content. Please try again.');
+        setError(err.message || 'Could not load course content. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -56,6 +91,9 @@ export default function Player() {
 
     if (courseId) {
       fetchCourseDetails();
+    } else {
+      setError('No course ID provided.');
+      setLoading(false);
     }
   }, [courseId, API_BASE]);
 
@@ -85,12 +123,12 @@ export default function Player() {
   if (error || !activeLesson) {
     return (
       <div className="min-h-screen bg-[#0B1130] text-white flex items-center justify-center font-sans p-4">
-        <div className="max-w-md w-full bg-[#111936] p-6 rounded-xl border border-gray-800 text-center">
+        <div className="max-w-md w-full bg-[#111936] p-6 rounded-xl border border-gray-800 text-center shadow-xl">
           <h2 className="text-lg font-bold text-red-400 mb-2">Error Loading Course</h2>
-          <p className="text-xs text-gray-400 mb-6">{error || 'Course not found.'}</p>
+          <p className="text-xs text-gray-400 mb-6">{error || 'Course content could not be loaded.'}</p>
           <Link
             to="/catalog"
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold transition"
           >
             Back to Catalog
           </Link>
@@ -101,7 +139,7 @@ export default function Player() {
 
   return (
     <div className="min-h-screen bg-[#0B1130] text-white flex flex-col font-sans">
-      {/* Top Bar */}
+      {/* Top Navigation Bar */}
       <header className="border-b border-gray-800 bg-[#0B1130]/90 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link
@@ -115,7 +153,7 @@ export default function Player() {
           </h1>
         </div>
 
-        {/* Course Progress Indicator */}
+        {/* Course Progress Bar */}
         <div className="flex items-center gap-3">
           <span className="text-xs text-gray-400">Progress: {progressPercent}%</span>
           <div className="w-32 bg-gray-800 h-2 rounded-full overflow-hidden border border-gray-700">
@@ -127,10 +165,10 @@ export default function Player() {
         </div>
       </header>
 
-      {/* Main Player & Sidebar Layout */}
+      {/* Main Video & Modules Layout */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-6 p-6 max-w-7xl w-full mx-auto">
         
-        {/* Main Video Viewport (3 Cols) */}
+        {/* Main Video Viewport */}
         <div className="lg:col-span-3 flex flex-col">
           <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-gray-800">
             <iframe
@@ -159,7 +197,7 @@ export default function Player() {
           </div>
         </div>
 
-        {/* Playlist / Lesson Sidebar (1 Col) */}
+        {/* Lessons/Modules Sidebar */}
         <div className="bg-gray-800/60 border border-gray-700/70 rounded-xl p-4 flex flex-col gap-3 h-fit">
           <h3 className="text-sm font-semibold text-gray-300 mb-1">
             Course Modules ({lessons.length})
