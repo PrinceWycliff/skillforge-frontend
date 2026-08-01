@@ -29,6 +29,7 @@ export default function App() {
           <Route path="/catalog" element={<Catalog />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/player/:courseId" element={<Player />} />
           
           {/* Admin Routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
