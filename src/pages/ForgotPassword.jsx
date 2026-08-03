@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const RAW_API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://skillforge-backend-4wd6.onrender.com';
@@ -13,6 +14,7 @@ export default function ForgotPassword() {
     e.preventDefault();
     setLoading(true);
     setMessage('');
+    setError('');
 
     try {
       const res = await fetch(`${API_BASE}/api/auth/forgot-password`, {
@@ -21,9 +23,14 @@ export default function ForgotPassword() {
         body: JSON.stringify({ email }),
       });
       const data = await res.json();
-      setMessage(data.message || 'Reset link request submitted.');
+
+      if (res.ok && data.success) {
+        setMessage('Password reset link has been dispatched to your email inbox.');
+      } else {
+        setError(data.message || 'Failed to send reset link.');
+      }
     } catch (err) {
-      setMessage('Failed to send request. Check your network.');
+      setError('Failed to send request. Check your network.');
     } finally {
       setLoading(false);
     }
@@ -34,12 +41,18 @@ export default function ForgotPassword() {
       <div className="max-w-md w-full bg-[#111936] p-8 rounded-xl border border-gray-800 shadow-2xl">
         <h2 className="text-xl font-bold mb-2 text-center">Reset Password</h2>
         <p className="text-xs text-gray-400 mb-6 text-center">
-          Enter your registered email address and we will send you a link to reset your password.
+          Enter your registered email address and we will send you a reset link to your inbox.
         </p>
 
         {message && (
-          <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/30 text-blue-300 text-xs rounded text-center">
+          <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs rounded text-center">
             {message}
+          </div>
+        )}
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 text-red-300 text-xs rounded text-center">
+            {error}
           </div>
         )}
 
@@ -50,19 +63,19 @@ export default function ForgotPassword() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Enter your account email"
-            className="w-full px-4 py-3 bg-[#0B1130] border border-gray-700 rounded-lg text-white text-sm"
+            className="w-full px-4 py-3 bg-[#0B1130] border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
           />
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-semibold transition"
+            className="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-semibold transition disabled:opacity-50"
           >
-            {loading ? 'Sending link...' : 'Send Reset Link'}
+            {loading ? 'Sending email...' : 'Send Reset Link'}
           </button>
         </form>
 
         <div className="mt-6 text-center text-xs">
-          <Link to="/instructor/login" className="text-gray-400 hover:text-white">
+          <Link to="/login" className="text-gray-400 hover:text-white">
             ← Back to Login
           </Link>
         </div>
