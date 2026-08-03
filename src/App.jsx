@@ -9,13 +9,15 @@ import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import InstructorLogin from './pages/InstructorLogin';
 import InstructorStudio from './pages/InstructorStudio';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import Register from './pages/Register';
 
 // Inline Guard for Instructor Studio
 const InstructorRoute = ({ children }) => {
-  const isAuth = localStorage.getItem('instructor_token');
+  const isAuth = localStorage.getItem('instructor_token') || localStorage.getItem('token');
   return isAuth ? children : <Navigate to="/instructor/login" replace />;
 };
 
@@ -30,6 +32,10 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           
+          {/* Password Recovery Routes */}
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+
           {/* Admin Routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route 

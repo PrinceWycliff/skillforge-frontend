@@ -9,8 +9,9 @@ export default function InstructorLogin() {
 
   const navigate = useNavigate();
 
-  // Use environment variable or default to your live Render backend URL
-  const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://skillforge-backend-4wd6.onrender.com';
+  // Use environment variable or fallback to deployed backend base URL
+  const RAW_API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://skillforge-backend-4wd6.onrender.com';
+  const API_BASE = RAW_API_BASE.replace(/\/$/, '');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -18,35 +19,40 @@ export default function InstructorLogin() {
     setLoading(true);
 
     try {
-      // Direct API call to backend database
-      const response = await fetch(`${API_BASE}/api/instructor/login`, {
+      // Connects directly to backend PostgreSQL auth route
+      const response = await fetch(`${API_BASE}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ 
+          email: email.trim().toLowerCase(), 
+          password 
+        }),
       });
 
-      const data = await response.json().catch(() => ({}));
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Invalid instructor credentials.');
+        throw new Error(data.message || 'Invalid login credentials.');
       }
 
-      // Store JWT token & instructor info returned from the server
+      // Store authentic JWT token and user profile returned from PostgreSQL
       if (data.token) {
+        localStorage.setItem('token', data.token);
         localStorage.setItem('instructor_token', data.token);
       }
       if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
         localStorage.setItem('instructor_user', JSON.stringify(data.user));
       }
 
-      // Redirect directly to Instructor Studio
+      // Direct user to Instructor Studio page
       navigate('/instructor/studio', { replace: true });
 
     } catch (err) {
       console.error('Login Error:', err);
-      setError(err.message || 'Connection error. Please try again.');
+      setError(err.message || 'Connection error. Please check your network and try again.');
     } finally {
       setLoading(false);
     }
@@ -62,17 +68,17 @@ export default function InstructorLogin() {
             S
           </div>
           <h2 className="text-2xl font-bold tracking-tight">Instructor Portal</h2>
-          <p className="text-gray-400 text-sm mt-1">Sign in to manage courses and studio content</p>
+          <p className="text-gray-400 text-sm mt-1">Sign in with your database credentials</p>
         </div>
 
-        {/* Error Alert */}
+        {/* Error Notification */}
         {error && (
           <div className="mb-6 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm text-center">
             {error}
           </div>
         )}
 
-        {/* Form */}
+        {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">
@@ -89,9 +95,17 @@ export default function InstructorLogin() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">
-              Password
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider">
+                Password
+              </label>
+              <Link 
+                to="/forgot-password" 
+                className="text-xs text-blue-400 hover:text-blue-300 hover:underline transition"
+              >
+                Forgot password?
+              </Link>
+            </div>
             <input
               type="password"
               required
@@ -111,7 +125,7 @@ export default function InstructorLogin() {
           </button>
         </form>
 
-        {/* Footer Navigation */}
+        {/* Footer Link */}
         <div className="mt-8 pt-6 border-t border-gray-800 text-center text-xs text-gray-500">
           <Link to="/" className="hover:text-gray-300 transition">
             ← Return to Main Homepage
