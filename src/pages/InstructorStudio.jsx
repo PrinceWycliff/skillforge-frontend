@@ -68,6 +68,11 @@ export default function InstructorStudio() {
     setLessons([...lessons, { title: '', videoUrl: '' }]);
   };
 
+  const removeLesson = (index) => {
+    if (lessons.length === 1) return; // always keep at least one lesson
+    setLessons(lessons.filter((_, i) => i !== index));
+  };
+
   const handleLessonChange = (index, field, value) => {
     const updated = [...lessons];
     updated[index][field] = value;
@@ -82,18 +87,80 @@ export default function InstructorStudio() {
     ]);
   };
 
+  const removeQuestion = (index) => {
+    if (quizQuestions.length === 1) return; // always keep at least one question
+    setQuizQuestions(quizQuestions.filter((_, i) => i !== index));
+  };
+
   const handleQuestionChange = (qIndex, value) => {
     const updated = [...quizQuestions];
     updated[qIndex].question = value;
     setQuizQuestions(updated);
   };
 
+  const handleOptionChange = (qIndex, oIndex, value) => {
+    const updated = [...quizQuestions];
+    updated[qIndex].options[oIndex] = value;
+    setQuizQuestions(updated);
+  };
+
+  const handleCorrectAnswerChange = (qIndex, oIndex) => {
+    const updated = [...quizQuestions];
+    updated[qIndex].correctAnswer = oIndex;
+    setQuizQuestions(updated);
+  };
+
+  // --- Validation helpers ---
+  const detailsAreValid = () =>
+    courseData.title.trim().length > 0 && courseData.description.trim().length > 0;
+
+  const lessonsAreValid = () =>
+    lessons.length > 0 && lessons.every((l) => l.title.trim() && l.videoUrl.trim());
+
+  const quizIsValid = () =>
+    quizQuestions.length > 0 &&
+    quizQuestions.every(
+      (q) => q.question.trim() && q.options.every((opt) => opt.trim())
+    );
+
+  const goToTab = (tab) => {
+    // Soft-gate forward navigation so instructors can't skip past incomplete steps
+    if (tab === 2 && !detailsAreValid()) {
+      setMsg({ type: 'error', text: 'Please add a course title and description first.' });
+      return;
+    }
+    if (tab === 3 && !lessonsAreValid()) {
+      setMsg({ type: 'error', text: 'Every lesson needs a title and a video URL.' });
+      return;
+    }
+    setMsg({ type: '', text: '' });
+    setActiveTab(tab);
+  };
+
   // Publish Form Handler
   const handlePublishCourse = async (e) => {
     if (e) e.preventDefault();
-    setLoading(true);
     setMsg({ type: '', text: '' });
 
+    if (!detailsAreValid()) {
+      setMsg({ type: 'error', text: 'Course title and description are required.' });
+      setActiveTab(1);
+      return;
+    }
+    if (!lessonsAreValid()) {
+      setMsg({ type: 'error', text: 'Every lesson needs a title and a video URL.' });
+      setActiveTab(2);
+      return;
+    }
+    if (!quizIsValid()) {
+      setMsg({ type: 'error', text: 'Every quiz question needs text and all 4 options filled in.' });
+      setActiveTab(3);
+      return;
+    }
+
+    setLoading(true);
+
+    // Payload shape is unchanged — backend still receives the same fields
     const fullCoursePackage = {
       ...courseData,
       lessons,
@@ -118,7 +185,7 @@ export default function InstructorStudio() {
           type: 'success',
           text: '🚀 Course track published successfully!',
         });
-        
+
         // Reset form state after success
         setCourseData({
           title: '',
@@ -175,6 +242,8 @@ export default function InstructorStudio() {
     navigate('/instructor/login');
   };
 
+  const optionLabels = ['A', 'B', 'C', 'D'];
+
   return (
     <div style={{ padding: '2rem', maxWidth: '1000px', margin: '0 auto', color: '#fff' }}>
       {/* Header and Logout */}
@@ -204,7 +273,7 @@ export default function InstructorStudio() {
       {/* Navigation Tabs */}
       <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         <button
-          onClick={() => setActiveTab(1)}
+          onClick={() => goToTab(1)}
           style={{
             padding: '0.6rem 1.2rem',
             borderRadius: '6px',
@@ -214,10 +283,10 @@ export default function InstructorStudio() {
             color: '#fff',
           }}
         >
-          1. Course Details
+          1. Course Details {detailsAreValid() ? '✓' : ''}
         </button>
         <button
-          onClick={() => setActiveTab(2)}
+          onClick={() => goToTab(2)}
           style={{
             padding: '0.6rem 1.2rem',
             borderRadius: '6px',
@@ -227,10 +296,10 @@ export default function InstructorStudio() {
             color: '#fff',
           }}
         >
-          2. Video Lessons ({lessons.length})
+          2. Video Lessons ({lessons.length}) {lessonsAreValid() ? '✓' : ''}
         </button>
         <button
-          onClick={() => setActiveTab(3)}
+          onClick={() => goToTab(3)}
           style={{
             padding: '0.6rem 1.2rem',
             borderRadius: '6px',
@@ -240,10 +309,10 @@ export default function InstructorStudio() {
             color: '#fff',
           }}
         >
-          3. Quiz Questions ({quizQuestions.length})
+          3. Quiz Questions ({quizQuestions.length}) {quizIsValid() ? '✓' : ''}
         </button>
         <button
-          onClick={() => setActiveTab(4)}
+          onClick={() => goToTab(4)}
           style={{
             padding: '0.6rem 1.2rem',
             borderRadius: '6px',
@@ -277,7 +346,7 @@ export default function InstructorStudio() {
         <div style={{ backgroundColor: '#1e293b', padding: '1.5rem', borderRadius: '8px' }}>
           <h3>Course Details</h3>
           <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Course Title</label>
+            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Course Title *</label>
             <input
               type="text"
               name="title"
@@ -299,10 +368,13 @@ export default function InstructorStudio() {
               <option value="Systems Administration">Systems Administration</option>
               <option value="Database Engineering">Database Engineering</option>
               <option value="Networking">Networking</option>
+              <option value="Data Analytics">Data Analytics</option>
+              <option value="Cybersecurity">Cybersecurity</option>
+              <option value="Project Management">Project Management</option>
             </select>
           </div>
           <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Description</label>
+            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Description *</label>
             <textarea
               name="description"
               rows="4"
@@ -312,8 +384,29 @@ export default function InstructorStudio() {
               style={{ width: '100%', padding: '0.6rem', borderRadius: '4px', border: '1px solid #334155', backgroundColor: '#0f172a', color: '#fff' }}
             />
           </div>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Thumbnail Image URL</label>
+            <input
+              type="text"
+              name="thumbnail"
+              value={courseData.thumbnail}
+              onChange={handleCourseChange}
+              placeholder="e.g. https://your-cdn.com/course-thumb.jpg"
+              style={{ width: '100%', padding: '0.6rem', borderRadius: '4px', border: '1px solid #334155', backgroundColor: '#0f172a', color: '#fff' }}
+            />
+            {courseData.thumbnail && (
+              <div style={{ marginTop: '0.75rem' }}>
+                <img
+                  src={courseData.thumbnail}
+                  alt="Thumbnail preview"
+                  style={{ maxWidth: '220px', maxHeight: '130px', borderRadius: '6px', border: '1px solid #334155', objectFit: 'cover' }}
+                  onError={(e) => { e.target.style.display = 'none'; }}
+                />
+              </div>
+            )}
+          </div>
           <button
-            onClick={() => setActiveTab(2)}
+            onClick={() => goToTab(2)}
             style={{ padding: '0.6rem 1.2rem', backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
           >
             Next: Add Video Lessons →
@@ -335,7 +428,17 @@ export default function InstructorStudio() {
           </div>
           {lessons.map((lesson, idx) => (
             <div key={idx} style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: '#0f172a', borderRadius: '6px' }}>
-              <label style={{ display: 'block', marginBottom: '0.3rem' }}>Lesson #{idx + 1} Title</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+                <label>Lesson #{idx + 1} Title</label>
+                {lessons.length > 1 && (
+                  <button
+                    onClick={() => removeLesson(idx)}
+                    style={{ padding: '0.2rem 0.6rem', backgroundColor: 'transparent', color: '#f87171', border: '1px solid #7f1d1d', borderRadius: '4px', fontSize: '0.75rem', cursor: 'pointer' }}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
               <input
                 type="text"
                 value={lesson.title}
@@ -354,7 +457,7 @@ export default function InstructorStudio() {
             </div>
           ))}
           <button
-            onClick={() => setActiveTab(3)}
+            onClick={() => goToTab(3)}
             style={{ padding: '0.6rem 1.2rem', backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
           >
             Next: Add Quizzes →
@@ -375,15 +478,55 @@ export default function InstructorStudio() {
             </button>
           </div>
           {quizQuestions.map((q, qIdx) => (
-            <div key={qIdx} style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: '#0f172a', borderRadius: '6px' }}>
-              <label style={{ display: 'block', marginBottom: '0.3rem' }}>Question #{qIdx + 1}</label>
+            <div key={qIdx} style={{ marginBottom: '1.25rem', padding: '1rem', backgroundColor: '#0f172a', borderRadius: '6px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+                <label>Question #{qIdx + 1}</label>
+                {quizQuestions.length > 1 && (
+                  <button
+                    onClick={() => removeQuestion(qIdx)}
+                    style={{ padding: '0.2rem 0.6rem', backgroundColor: 'transparent', color: '#f87171', border: '1px solid #7f1d1d', borderRadius: '4px', fontSize: '0.75rem', cursor: 'pointer' }}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
               <input
                 type="text"
                 value={q.question}
                 onChange={(e) => handleQuestionChange(qIdx, e.target.value)}
                 placeholder="e.g. What does CORS stand for?"
-                style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #334155', backgroundColor: '#1e293b', color: '#fff' }}
+                style={{ width: '100%', padding: '0.5rem', marginBottom: '0.75rem', borderRadius: '4px', border: '1px solid #334155', backgroundColor: '#1e293b', color: '#fff' }}
               />
+
+              <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.8rem', color: '#94a3b8' }}>
+                Answer options — select the radio button next to the correct one
+              </label>
+              {q.options.map((opt, oIdx) => (
+                <div key={oIdx} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem' }}>
+                  <input
+                    type="radio"
+                    name={`correct-answer-${qIdx}`}
+                    checked={q.correctAnswer === oIdx}
+                    onChange={() => handleCorrectAnswerChange(qIdx, oIdx)}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  <span style={{ width: '1.2rem', color: '#64748b', fontSize: '0.85rem' }}>{optionLabels[oIdx]}</span>
+                  <input
+                    type="text"
+                    value={opt}
+                    onChange={(e) => handleOptionChange(qIdx, oIdx, e.target.value)}
+                    placeholder={`Option ${optionLabels[oIdx]}`}
+                    style={{
+                      flex: 1,
+                      padding: '0.5rem',
+                      borderRadius: '4px',
+                      border: q.correctAnswer === oIdx ? '1px solid #16a34a' : '1px solid #334155',
+                      backgroundColor: '#1e293b',
+                      color: '#fff',
+                    }}
+                  />
+                </div>
+              ))}
             </div>
           ))}
 
@@ -393,7 +536,7 @@ export default function InstructorStudio() {
             style={{
               width: '100%',
               padding: '0.8rem',
-              marginTop: '1.5rem',
+              marginTop: '1rem',
               backgroundColor: loading ? '#64748b' : '#2563eb',
               color: '#fff',
               border: 'none',
