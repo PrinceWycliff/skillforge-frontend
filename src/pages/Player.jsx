@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 
 export default function Player() {
@@ -10,6 +10,20 @@ export default function Player() {
   const [completedLessons, setCompletedLessons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // --- Watch-time gating state ---
+  const [watchedPercent, setWatchedPercent] = useState(0);
+  const [videoUnlocked, setVideoUnlocked] = useState(false);
+  const playerContainerRef = useRef(null);
+  const playerRef = useRef(null);
+  const pollRef = useRef(null);
+  const WATCH_THRESHOLD = 90; // % of video that must be watched to unlock "Mark as Complete"
+
+  // --- Quiz state ---
+  const [quizAnswers, setQuizAnswers] = useState({});
+  const [quizSubmitted, setQuizSubmitted] = useState(false);
+  const [quizScore, setQuizScore] = useState(null);
+  const CERTIFICATE_PASS_SCORE = 85;
 
   const RAW_API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://skillforge-backend-4wd6.onrender.com';
   const API_BASE = RAW_API_BASE.replace(/\/$/, '');
@@ -26,6 +40,29 @@ export default function Player() {
       return `https://www.youtube.com/embed/${videoId}`;
     }
     return url;
+  };
+
+  const isYouTubeLesson = (lesson) => !!lesson?.embedUrl?.includes('youtube.com/embed/');
+
+  const extractYouTubeId = (embedUrl) => {
+    const match = embedUrl?.match(/embed\/([a-zA-Z0-9_-]+)/);
+    return match ? match[1] : null;
+  };
+
+  // Best-effort read of the logged-in student's name for the certificate, without touching auth setup
+  const getUserName = () => {
+    try {
+      const stored = localStorage.getItem('user_name') || localStorage.getItem('userName');
+      if (stored) return stored;
+      const token = localStorage.getItem('token');
+      if (token) {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.name || payload.full_name || payload.email || 'Student';
+      }
+    } catch (e) {
+      // ignore decode errors, fall through to default
+    }
+    return 'Student';
   };
 
   useEffect(() => {
@@ -47,6 +84,7 @@ export default function Player() {
           const fallbackCourse = {
             id: courseId,
             title: `Skill Track Course`,
+            quiz: [],
             lessons: [
               {
                 id: 1,
@@ -71,7 +109,7 @@ export default function Player() {
         if (!response.ok) {
           throw new Error(`Failed to load course details (Status: ${response.status})`);
         }
-        
+
         const data = await response.json();
         setCourse(data);
 
@@ -117,7 +155,81 @@ export default function Player() {
     }
   }, [courseId, API_BASE]);
 
+  // Load the YouTube IFrame API script once
+  useEffect(() => {
+    if (window.YT && window.YT.Player) return;
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    document.body.appendChild(tag);
+  }, []);
+
+  // (Re)initialize watch-tracking whenever the active lesson changes
+  useEffect(() => {
+    if (pollRef.current) clearInterval(pollRef.current);
+
+    if (!activeLesson) return;
+
+    // Already-completed lessons stay unlocked so students can revisit freely
+    if (completedLessons.includes(activeLesson.id)) {
+      setVideoUnlocked(true);
+      setWatchedPercent(100);
+      return;
+    }
+
+    setWatchedPercent(0);
+
+    if (!isYouTubeLesson(activeLesson)) {
+      // Can't measure watch-time on non-YouTube embeds — don't block these students
+      setVideoUnlocked(true);
+      return;
+    }
+
+    setVideoUnlocked(false);
+    const videoId = extractYouTubeId(activeLesson.embedUrl);
+    if (!videoId || !playerContainerRef.current) {
+      setVideoUnlocked(true);
+      return;
+    }
+
+    const createPlayer = () => {
+      if (playerRef.current && typeof playerRef.current.destroy === 'function') {
+        playerRef.current.destroy();
+      }
+      playerRef.current = new window.YT.Player(playerContainerRef.current, {
+        videoId,
+        playerVars: { rel: 0 },
+      });
+
+      pollRef.current = setInterval(() => {
+        const p = playerRef.current;
+        if (p && typeof p.getCurrentTime === 'function' && typeof p.getDuration === 'function') {
+          const duration = p.getDuration();
+          const current = p.getCurrentTime();
+          if (duration > 0) {
+            const pct = Math.min(100, Math.round((current / duration) * 100));
+            setWatchedPercent(pct);
+            if (pct >= WATCH_THRESHOLD) {
+              setVideoUnlocked(true);
+            }
+          }
+        }
+      }, 2000);
+    };
+
+    if (window.YT && window.YT.Player) {
+      createPlayer();
+    } else {
+      window.onYouTubeIframeAPIReady = createPlayer;
+    }
+
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeLesson]);
+
   const toggleComplete = (id) => {
+    if (!videoUnlocked && !completedLessons.includes(id)) return; // guard against bypass
     if (completedLessons.includes(id)) {
       setCompletedLessons(completedLessons.filter((item) => item !== id));
     } else {
@@ -128,6 +240,48 @@ export default function Player() {
   const progressPercent = lessons.length > 0
     ? Math.round((completedLessons.length / lessons.length) * 100)
     : 0;
+
+  const allLessonsComplete = lessons.length > 0 && completedLessons.length === lessons.length;
+
+  // Parse quiz questions safely — jsonb columns usually arrive pre-parsed, but guard against strings too
+  let quizQuestions = [];
+  try {
+    if (Array.isArray(course?.quiz)) {
+      quizQuestions = course.quiz;
+    } else if (typeof course?.quiz === 'string' && course.quiz.trim()) {
+      quizQuestions = JSON.parse(course.quiz);
+    }
+  } catch (e) {
+    quizQuestions = [];
+  }
+
+  const handleSelectAnswer = (qIdx, optIdx) => {
+    if (quizSubmitted) return;
+    setQuizAnswers({ ...quizAnswers, [qIdx]: optIdx });
+  };
+
+  const handleSubmitQuiz = () => {
+    let correct = 0;
+    quizQuestions.forEach((q, idx) => {
+      if (quizAnswers[idx] === q.correctAnswer) correct++;
+    });
+    const score = quizQuestions.length > 0 ? Math.round((correct / quizQuestions.length) * 100) : 0;
+    setQuizScore(score);
+    setQuizSubmitted(true);
+  };
+
+  const handleRetakeQuiz = () => {
+    setQuizAnswers({});
+    setQuizSubmitted(false);
+    setQuizScore(null);
+  };
+
+  const certificateEligible =
+    allLessonsComplete && quizSubmitted && quizScore !== null && quizScore >= CERTIFICATE_PASS_SCORE;
+
+  const certificateUrl = course
+    ? `${API_BASE}/api/certificates/generate/${courseId}?name=${encodeURIComponent(getUserName())}&courseName=${encodeURIComponent(course.title || courseId)}&score=${quizScore ?? ''}`
+    : '#';
 
   if (loading) {
     return (
@@ -186,30 +340,145 @@ export default function Player() {
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-6 p-6 max-w-7xl w-full mx-auto">
         <div className="lg:col-span-3 flex flex-col">
           <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-gray-800">
-            <iframe
-              className="w-full h-full"
-              src={activeLesson.embedUrl}
-              title={activeLesson.title}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            ></iframe>
+            {isYouTubeLesson(activeLesson) ? (
+              <div ref={playerContainerRef} className="w-full h-full" />
+            ) : (
+              <iframe
+                className="w-full h-full"
+                src={activeLesson.embedUrl}
+                title={activeLesson.title}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              ></iframe>
+            )}
           </div>
 
           <div className="mt-4 flex items-center justify-between">
             <h2 className="text-xl font-bold">{activeLesson.title}</h2>
-            <button
-              onClick={() => toggleComplete(activeLesson.id)}
-              className={`px-4 py-2 rounded-lg text-xs font-semibold transition ${
-                completedLessons.includes(activeLesson.id)
-                  ? 'bg-green-600 hover:bg-green-500 text-white'
-                  : 'bg-blue-600 hover:bg-blue-500 text-white'
-              }`}
-            >
-              {completedLessons.includes(activeLesson.id)
-                ? '✓ Completed'
-                : 'Mark as Complete'}
-            </button>
+            <div className="flex flex-col items-end gap-1">
+              <button
+                onClick={() => toggleComplete(activeLesson.id)}
+                disabled={!videoUnlocked && !completedLessons.includes(activeLesson.id)}
+                className={`px-4 py-2 rounded-lg text-xs font-semibold transition ${
+                  completedLessons.includes(activeLesson.id)
+                    ? 'bg-green-600 hover:bg-green-500 text-white'
+                    : videoUnlocked
+                    ? 'bg-blue-600 hover:bg-blue-500 text-white'
+                    : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                {completedLessons.includes(activeLesson.id)
+                  ? '✓ Completed'
+                  : videoUnlocked
+                  ? 'Mark as Complete'
+                  : `Watch ${WATCH_THRESHOLD}% to Unlock`}
+              </button>
+              {isYouTubeLesson(activeLesson) && !completedLessons.includes(activeLesson.id) && (
+                <span className="text-[10px] text-gray-500">Watched: {watchedPercent}%</span>
+              )}
+            </div>
           </div>
+
+          {/* --- Course Quiz --- */}
+          {quizQuestions.length > 0 && (
+            <div className="mt-8 bg-gray-800/60 border border-gray-700/70 rounded-xl p-5">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-gray-200">Course Quiz ({quizQuestions.length} questions)</h3>
+                {!allLessonsComplete && (
+                  <span className="text-[11px] text-amber-400">Complete all lessons to unlock the quiz</span>
+                )}
+              </div>
+
+              <fieldset disabled={!allLessonsComplete} className={!allLessonsComplete ? 'opacity-40' : ''}>
+                <div className="space-y-5">
+                  {quizQuestions.map((q, qIdx) => (
+                    <div key={qIdx} className="bg-gray-900/50 border border-gray-800 rounded-lg p-4">
+                      <p className="text-sm font-medium text-white mb-3">
+                        {qIdx + 1}. {q.question}
+                      </p>
+                      <div className="space-y-2">
+                        {(q.options || []).map((opt, oIdx) => {
+                          const selected = quizAnswers[qIdx] === oIdx;
+                          const isCorrectOpt = q.correctAnswer === oIdx;
+                          let optionStyle = 'border-gray-700 bg-gray-800/50 text-gray-300';
+                          if (quizSubmitted) {
+                            if (isCorrectOpt) optionStyle = 'border-green-500 bg-green-500/10 text-green-300';
+                            else if (selected && !isCorrectOpt) optionStyle = 'border-red-500 bg-red-500/10 text-red-300';
+                          } else if (selected) {
+                            optionStyle = 'border-blue-500 bg-blue-500/10 text-white';
+                          }
+                          return (
+                            <label
+                              key={oIdx}
+                              className={`flex items-center gap-2 p-2.5 rounded-lg border text-xs cursor-pointer transition ${optionStyle}`}
+                            >
+                              <input
+                                type="radio"
+                                name={`quiz-q-${qIdx}`}
+                                checked={selected}
+                                onChange={() => handleSelectAnswer(qIdx, oIdx)}
+                                disabled={quizSubmitted}
+                              />
+                              {opt}
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {!quizSubmitted ? (
+                  <button
+                    onClick={handleSubmitQuiz}
+                    disabled={Object.keys(quizAnswers).length < quizQuestions.length}
+                    className="mt-5 w-full py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition"
+                  >
+                    Submit Quiz
+                  </button>
+                ) : (
+                  <div className="mt-5 flex items-center justify-between bg-gray-900/60 border border-gray-800 rounded-lg p-4">
+                    <div>
+                      <p className={`text-sm font-bold ${quizScore >= CERTIFICATE_PASS_SCORE ? 'text-green-400' : 'text-red-400'}`}>
+                        Score: {quizScore}%
+                      </p>
+                      <p className="text-[11px] text-gray-400">
+                        {quizScore >= CERTIFICATE_PASS_SCORE
+                          ? 'Passed — certificate unlocked below.'
+                          : `Need ${CERTIFICATE_PASS_SCORE}% or higher to earn a certificate.`}
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleRetakeQuiz}
+                      className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-1.5 rounded-lg transition"
+                    >
+                      Retake Quiz
+                    </button>
+                  </div>
+                )}
+              </fieldset>
+            </div>
+          )}
+
+          {/* --- Certificate --- */}
+          {certificateEligible && (
+            <div className="mt-6 bg-gradient-to-r from-blue-600/20 to-cyan-500/10 border border-cyan-500/40 rounded-xl p-5 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-white">🎓 Certificate Ready!</h3>
+                <p className="text-[11px] text-gray-300">
+                  All lessons watched and quiz passed with {quizScore}%. Download your certificate now.
+                </p>
+              </div>
+              <a
+                href={certificateUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-[#0B1130] text-xs font-bold rounded-lg transition whitespace-nowrap"
+              >
+                Download Certificate
+              </a>
+            </div>
+          )}
         </div>
 
         <div className="bg-gray-800/60 border border-gray-700/70 rounded-xl p-4 flex flex-col gap-3 h-fit">
@@ -247,6 +516,15 @@ export default function Player() {
               );
             })}
           </div>
+
+          {quizQuestions.length > 0 && (
+            <div className="mt-2 pt-3 border-t border-gray-700/70 text-[11px] text-gray-400 flex items-center justify-between">
+              <span>Course Quiz</span>
+              <span className={quizSubmitted ? (quizScore >= CERTIFICATE_PASS_SCORE ? 'text-green-400' : 'text-red-400') : 'text-gray-500'}>
+                {quizSubmitted ? `${quizScore}%` : `${quizQuestions.length} questions`}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>
