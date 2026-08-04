@@ -19,7 +19,6 @@ export default function InstructorStudio() {
     title: '',
     category: 'Web Development',
     description: '',
-    thumbnail: '',
   });
 
   // Lessons State
@@ -27,7 +26,7 @@ export default function InstructorStudio() {
     { title: 'Course Overview & Setup', videoUrl: '' }
   ]);
 
-  // Quiz Questions State (Full Multiple Choice Support)
+  // Quiz Questions State
   const [quizQuestions, setQuizQuestions] = useState([
     {
       question: '',
@@ -113,14 +112,16 @@ export default function InstructorStudio() {
     setQuizQuestions(updated);
   };
 
-  // Publish Form Handler
+  // Publish Form Handler (Strictly excludes 'thumbnail' to match PostgreSQL table schema)
   const handlePublishCourse = async (e) => {
     if (e) e.preventDefault();
     setLoading(true);
     setMsg({ type: '', text: '' });
 
     const fullCoursePackage = {
-      ...courseData,
+      title: courseData.title,
+      category: courseData.category,
+      description: courseData.description,
       lessons,
       quiz: quizQuestions,
     };
@@ -147,7 +148,6 @@ export default function InstructorStudio() {
           title: '',
           category: 'Web Development',
           description: '',
-          thumbnail: '',
         });
         setLessons([{ title: 'Course Overview & Setup', videoUrl: '' }]);
         setQuizQuestions([
@@ -171,21 +171,25 @@ export default function InstructorStudio() {
     }
   };
 
-  // Delete Course Handler
+  // Fixed Delete Course Handler
   const handleDeleteCourse = async (courseId) => {
     if (!window.confirm('Are you sure you want to permanently delete this course?')) return;
 
     try {
       const res = await fetch(`${API_BASE}/api/courses/${courseId}`, {
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
+
       const data = await res.json().catch(() => ({}));
 
-      if (res.ok && data.success) {
+      if (res.ok && (data.success || res.status === 200)) {
         setMsg({ type: 'success', text: '🗑️ Course deleted successfully.' });
-        setExistingCourses((prev) => prev.filter((course) => course.id !== courseId));
+        setExistingCourses((prev) => prev.filter((c) => c.id !== courseId && c._id !== courseId));
       } else {
-        setMsg({ type: 'error', text: data.message || 'Failed to delete course.' });
+        setMsg({ type: 'error', text: data.message || 'Failed to delete course from database.' });
       }
     } catch (err) {
       console.error('Delete Error:', err);
@@ -296,7 +300,7 @@ export default function InstructorStudio() {
         </div>
       )}
 
-      {/* Tab 1: Details */}
+      {/* Tab 1: Course Details */}
       {activeTab === 1 && (
         <div style={{ backgroundColor: '#1e293b', padding: '1.5rem', borderRadius: '8px' }}>
           <h3>Course Details</h3>
@@ -490,7 +494,7 @@ export default function InstructorStudio() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {existingCourses.map((course) => (
                 <div
-                  key={course.id}
+                  key={course.id || course._id}
                   style={{
                     backgroundColor: '#0f172a',
                     padding: '1rem',
@@ -510,7 +514,7 @@ export default function InstructorStudio() {
                   </div>
 
                   <button
-                    onClick={() => handleDeleteCourse(course.id)}
+                    onClick={() => handleDeleteCourse(course.id || course._id)}
                     style={{
                       padding: '0.5rem 0.9rem',
                       backgroundColor: '#dc2626',
