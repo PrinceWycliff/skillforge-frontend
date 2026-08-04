@@ -1,6 +1,42 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { registerWithEmail, sendVerificationCode, verifyEmailCode } from '../config/firebase';
+
+// BACKEND API CONFIGURATION
+const API_BASE_URL = 'https://skillforge-backend-4wd6.onrender.com';
+
+// API Helper Functions matching your app.js endpoints
+const registerWithEmail = async (email, password) => {
+  const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Registration failed.');
+  return data;
+};
+
+const sendVerificationCode = async (email) => {
+  const res = await fetch(`${API_BASE_URL}/api/auth/send-verification-code`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Failed to send code.');
+  return data;
+};
+
+const verifyEmailCode = async (email, code) => {
+  const res = await fetch(`${API_BASE_URL}/api/auth/verify-code`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, code }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Verification failed.');
+  return data;
+};
 
 export default function Register() {
   const [email, setEmail] = useState('');
@@ -42,26 +78,16 @@ export default function Register() {
     setLoading(true);
 
     try {
-      // 1. Create User (unchanged)
-      const result = await registerWithEmail(email, password);
-      const user = result.user;
-      setPendingUser(user);
+      // Calls app.js /api/auth/register endpoint (which creates user & dispatches Brevo email)
+      await registerWithEmail(email, password);
+      setPendingUser({ email });
 
-      // 2. Send verification code to the user's email
-      await sendVerificationCode(user);
-
-      // 3. Show code entry modal (do NOT redirect or set session yet)
+      // Show code entry modal
       setShowVerificationModal(true);
       setResendCooldown(60);
     } catch (err) {
       console.error('Registration Error:', err);
-      if (err.code === 'auth/email-already-in-use') {
-        setError('This email is already registered. Try logging in.');
-      } else if (err.code === 'auth/weak-password') {
-        setError('Password should be at least 6 characters.');
-      } else {
-        setError(err.message || 'Failed to create account.');
-      }
+      setError(err.message || 'Failed to create account.');
     } finally {
       setLoading(false);
     }
@@ -113,11 +139,10 @@ export default function Register() {
 
     setVerifying(true);
     try {
-      // Backend checks the code against what was generated/emailed for this user
+      // Calls app.js /api/auth/verify-code endpoint
       const response = await verifyEmailCode(email, fullCode);
 
       if (response?.success) {
-        // Success -> redirect to Login only now
         setShowVerificationModal(false);
         navigate('/login', {
           replace: true,
@@ -139,7 +164,8 @@ export default function Register() {
     setResending(true);
     setCodeError('');
     try {
-      await sendVerificationCode(pendingUser || { email });
+      // Calls app.js /api/auth/send-verification-code endpoint
+      await sendVerificationCode(email);
       setResendCooldown(60);
       setCode(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
@@ -280,7 +306,7 @@ export default function Register() {
                 ? 'Resending...'
                 : resendCooldown > 0
                 ? `Resend code in ${resendCooldown}s`
-                : 'Didn\'t get a code? Resend'}
+                : "Didn't get a code? Resend"}
             </button>
           </div>
         </div>
