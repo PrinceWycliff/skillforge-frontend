@@ -4,6 +4,7 @@ import Landing from './pages/Landing'; // Landing / Homepage
 import Catalog from './pages/Catalog'; // Dedicated Course Catalog
 import Player from './pages/Player';
 import Dashboard from './pages/Dashboard';
+import ContactSupport from './pages/ContactSupport';
 import Login from './pages/Login';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
@@ -31,6 +32,7 @@ export default function App() {
           <Route path="/catalog" element={<Catalog />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/contact" element={<ContactSupport />} />
           
           {/* Password Recovery Routes */}
           <Route path="/forgot-password" element={<ForgotPassword />} />
