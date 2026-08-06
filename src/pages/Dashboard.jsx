@@ -4,7 +4,6 @@ import { FaPlay, FaGraduationCap, FaBookOpen, FaCheckCircle, FaAward } from 'rea
 
 const API_BASE_URL = import.meta.env?.VITE_API_URL || 'https://skillforge-backend.onrender.com';
 
-// Helper to decode JWT token payload without external libraries
 const decodeToken = (token) => {
   try {
     const base64Url = token.split('.')[1];
@@ -33,14 +32,12 @@ const Dashboard = () => {
   }, []);
 
   const fetchDashboardData = async () => {
-    // 1. Try retrieving token across common localStorage key names
     const token =
       localStorage.getItem('token') ||
       localStorage.getItem('accessToken') ||
       localStorage.getItem('jwt') ||
       localStorage.getItem('user_token');
 
-    // Also check if user object was directly saved on login
     const savedUserJson = localStorage.getItem('user');
     let savedUser = null;
     if (savedUserJson) {
@@ -56,7 +53,6 @@ const Dashboard = () => {
       return;
     }
 
-    // Try decoding JWT as early fallback for student name
     const decoded = token ? decodeToken(token) : null;
     const fallbackName =
       savedUser?.name ||
@@ -68,55 +64,101 @@ const Dashboard = () => {
       decoded?.email?.split('@')[0] ||
       'Learner';
 
+    setUser({ name: fallbackName });
+
+    // Read enrolled course IDs stored directly in localStorage
+    const localEnrolledRaw = localStorage.getItem('enrolledCourses');
+    let localCourseIds = [];
+    if (localEnrolledRaw) {
+      try {
+        localCourseIds = JSON.parse(localEnrolledRaw);
+      } catch (e) {
+        localCourseIds = [];
+      }
+    }
+
+    // Try fetching from backend endpoints
+    const endpoints = [
+      `${API_BASE_URL}/api/users/me`,
+      `${API_BASE_URL}/api/user/profile`,
+      `${API_BASE_URL}/api/enrollments/my-courses`,
+      `${API_BASE_URL}/api/courses/enrolled`,
+    ];
+
+    let success = false;
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+
     try {
       setLoading(true);
 
-      // 2. Query backend user endpoint
-      const res = await fetch(`${API_BASE_URL}/api/users/me`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
+      for (const endpoint of endpoints) {
+        try {
+          const res = await fetch(endpoint, { headers });
+          if (res.ok) {
+            const data = await res.json();
+            
+            const userData = data.user || data.profile || data;
+            if (userData.name || userData.fullName) {
+              setUser({
+                name: userData.name || userData.fullName || fallbackName,
+                email: userData.email || decoded?.email,
+                ...userData,
+              });
+            }
 
-      if (res.ok) {
-        const data = await res.json();
-        
-        // Extract user details
-        const userData = data.user || data.profile || data;
-        setUser({
-          name: userData.name || userData.fullName || userData.username || fallbackName,
-          email: userData.email || decoded?.email,
-          ...userData,
-        });
+            const courses =
+              data.enrolledCourses ||
+              data.courses ||
+              data.user?.enrolledCourses ||
+              data.user?.courses ||
+              data.enrollments ||
+              (Array.isArray(data) ? data : []);
 
-        // Extract enrolled courses array across all backend conventions
-        const courses =
-          data.enrolledCourses ||
-          data.courses ||
-          data.user?.enrolledCourses ||
-          data.user?.courses ||
-          data.enrollments ||
-          savedUser?.enrolledCourses ||
-          [];
+            if (Array.isArray(courses) && courses.length > 0) {
+              setEnrolledCourses(courses);
+              success = true;
+              setError('');
+              break;
+            }
+          }
+        } catch (singleErr) {
+          console.warn(`Endpoint ${endpoint} failed:`, singleErr);
+        }
+      }
 
-        setEnrolledCourses(Array.isArray(courses) ? courses : []);
-      } else {
-        // Fallback to local storage or JWT payload if API endpoint response differs
-        setUser({ name: fallbackName });
-        if (savedUser?.enrolledCourses && Array.isArray(savedUser.enrolledCourses)) {
+      // If backend sync didn't return list, construct courses from local storage IDs
+      if (!success) {
+        if (Array.isArray(localCourseIds) && localCourseIds.length > 0) {
+          // Map stored course IDs/strings into full course objects for display
+          const fallbackCoursesList = localCourseIds.map((item, idx) => {
+            if (typeof item === 'object' && item !== null) return item;
+            
+            return {
+              _id: item,
+              id: item,
+              title: item.startsWith('course_') ? `Course (${item.slice(7, 15)})` : `Enrolled Course ${idx + 1}`,
+              category: 'Development',
+              description: 'Access your saved course content and continue learning.',
+              progress: 0,
+              thumbnailUrl: 'https://via.placeholder.com/350x180/131b4d/ffffff?text=SkillForge+Course'
+            };
+          });
+
+          setEnrolledCourses(fallbackCoursesList);
+          setError('Showing locally saved course enrollments (backend offline or un-synced).');
+        } else if (savedUser?.enrolledCourses && Array.isArray(savedUser.enrolledCourses)) {
           setEnrolledCourses(savedUser.enrolledCourses);
+          setError('Showing user profile enrollments.');
+        } else {
+          setError('Unable to sync latest courses from backend. Showing local state.');
         }
       }
     } catch (err) {
-      console.error('Dashboard data fetch error:', err);
-      // Soft fail fallback
-      setUser({ name: fallbackName });
-      if (savedUser?.enrolledCourses && Array.isArray(savedUser.enrolledCourses)) {
-        setEnrolledCourses(savedUser.enrolledCourses);
-      } else {
-        setError('Unable to sync latest courses from backend. Showing local state.');
-      }
+      console.error('Fatal fetch error:', err);
+      setError('Unable to reach backend server. Showing local state.');
     } finally {
       setLoading(false);
     }
@@ -128,7 +170,7 @@ const Dashboard = () => {
     return (
       <div style={loadingContainerStyle}>
         <div style={spinnerStyle}></div>
-        <p style={{ color: '#94a3b8', marginTop: '1rem' }}>Loading your dashboard...</p>
+        <p style={{ color: '#94a3b8', marginTop: '1rem' }}>Loading dashboard...</p>
       </div>
     );
   }
@@ -137,7 +179,7 @@ const Dashboard = () => {
     <div style={pageContainerStyle}>
       <div style={contentWrapperStyle}>
         
-        {/* Welcome Banner */}
+        {/* Welcome Header */}
         <header style={welcomeHeaderStyle}>
           <div>
             <h1 style={welcomeTitleStyle}>
@@ -154,7 +196,7 @@ const Dashboard = () => {
 
         {error && <div style={errorMessageStyle}>{error}</div>}
 
-        {/* Empty State */}
+        {/* Empty State vs Active Courses */}
         {enrolledCourses.length === 0 ? (
           <div style={emptyStateCardStyle}>
             <div style={emptyIconWrapperStyle}>
@@ -172,7 +214,7 @@ const Dashboard = () => {
           </div>
         ) : (
           <>
-            {/* 1. Resume Learning Banner */}
+            {/* Resume Banner */}
             {lastActiveCourse && (
               <div style={resumeBannerStyle}>
                 <div style={{ flex: 1 }}>
@@ -189,12 +231,12 @@ const Dashboard = () => {
                       <div
                         style={{
                           ...bannerProgressBarFillStyle,
-                          width: `${lastActiveCourse.progress || 15}%`,
+                          width: `${lastActiveCourse.progress || 0}%`,
                         }}
                       ></div>
                     </div>
                     <span style={{ fontSize: '0.85rem', color: '#c084fc', fontWeight: 'bold' }}>
-                      {lastActiveCourse.progress || 15}% Completed
+                      {lastActiveCourse.progress || 0}% Completed
                     </span>
                   </div>
                 </div>
@@ -208,7 +250,7 @@ const Dashboard = () => {
               </div>
             )}
 
-            {/* Stats Overview */}
+            {/* Quick Stats Summary */}
             <div style={statsGridStyle}>
               <div style={statCardStyle}>
                 <FaBookOpen size={24} color="#a855f7" />
@@ -287,7 +329,7 @@ const Dashboard = () => {
   );
 };
 
-// Component styles
+// Styles
 const pageContainerStyle = {
   backgroundColor: '#0B1130',
   minHeight: '100vh',
