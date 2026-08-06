@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { loginWithGoogle, loginWithEmail } from '../config/firebase';
+import { loginWithGoogle } from '../config/firebase';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -11,10 +11,13 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const RAW_API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://skillforge-backend-4wd6.onrender.com';
+  const API_BASE = RAW_API_BASE.replace(/\/$/, '');
+
   // Smart Redirection Target: Default to Home ('/') unless coming specifically from Catalog trigger
   const targetDestination = location.state?.from === 'catalog' ? '/catalog' : '/';
 
-  // Google Authentication Handler
+  // Google Authentication Handler (unchanged — still Firebase)
   const handleGoogleAuth = async () => {
     setError('');
     setLoading(true);
@@ -44,38 +47,32 @@ export default function Login() {
     }
   };
 
-  // Email/Password Authentication Handler
+  // Email/Password Authentication Handler — now backend-based (Postgres), not Firebase
   const handleEmailLogin = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      const result = await loginWithEmail(email, password);
-      const user = result.user;
-      const idToken = await user.getIdToken();
+      const res = await fetch(`${API_BASE}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-      localStorage.setItem('token', idToken);
-      localStorage.setItem(
-        'user',
-        JSON.stringify({
-          email: user.email,
-          uid: user.uid,
-        })
-      );
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Invalid email or password.');
+      }
+
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
 
       navigate(targetDestination, { replace: true });
     } catch (err) {
       console.error('Email Login Error:', err);
-      if (
-        err.code === 'auth/invalid-credential' ||
-        err.code === 'auth/user-not-found' ||
-        err.code === 'auth/wrong-password'
-      ) {
-        setError('Invalid email or password. Please try again.');
-      } else {
-        setError(err.message || 'Unable to log in. Please try again.');
-      }
+      setError(err.message || 'Unable to log in. Please try again.');
     } finally {
       setLoading(false);
     }

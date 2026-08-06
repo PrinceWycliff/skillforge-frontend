@@ -47,7 +47,7 @@ export default function ResetPassword() {
 
       setMessage('Password reset successful! Redirecting to login...');
       setTimeout(() => {
-        navigate('/instructor/login');
+        navigate('/login');
       }, 2500);
     } catch (err) {
       setError(err.message || 'Server connection error.');
@@ -115,7 +115,7 @@ export default function ResetPassword() {
         </form>
 
         <div className="mt-6 text-center text-xs">
-          <Link to="/instructor/login" className="text-gray-400 hover:text-white">
+          <Link to="/login" className="text-gray-400 hover:text-white">
             ← Back to Login
           </Link>
         </div>

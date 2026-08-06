@@ -20,48 +20,13 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
-// Backend API base URL (Vite env var)
-const API_BASE = import.meta.env.VITE_API_URL;
-
-// Auth helper exports (unchanged)
+// Auth helper exports
+// NOTE: loginWithGoogle is the only one actively used now (Login.jsx).
+// loginWithEmail / registerWithEmail are kept exported (harmless, unused)
+// in case any other file still references them — email auth now goes
+// through the backend (Postgres + Brevo) instead of Firebase.
 export const loginWithGoogle = () => signInWithPopup(auth, googleProvider);
 export const loginWithEmail = (email, password) => signInWithEmailAndPassword(auth, email, password);
 export const registerWithEmail = (email, password) => createUserWithEmailAndPassword(auth, email, password);
-
-// --- Code-based email verification (replaces the old Firebase link-based sendEmailVerification) ---
-
-// Asks the backend to generate a 6-digit code, store it (with expiry) against
-// this user, and email it to them.
-export const sendVerificationCode = async (user) => {
-  const res = await fetch(`${API_BASE}/api/auth/send-code`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: user.email, uid: user.uid }),
-  });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || "Failed to send verification code.");
-  }
-
-  return res.json();
-};
-
-// Sends the code the user typed in to the backend for checking.
-// Expected backend response: { success: true } or { success: false, message }
-export const verifyEmailCode = async (email, code) => {
-  const res = await fetch(`${API_BASE}/api/auth/verify-code`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, code }),
-  });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    return { success: false, message: err.message || "Invalid or expired code." };
-  }
-
-  return res.json();
-};
 
 console.log("Loaded Firebase API Key:", import.meta.env.VITE_FIREBASE_API_KEY);

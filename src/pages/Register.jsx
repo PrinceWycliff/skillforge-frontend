@@ -1,68 +1,25 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-
-// BACKEND API CONFIGURATION
-const API_BASE_URL = 'https://skillforge-backend-4wd6.onrender.com';
-
-// API Helper Functions matching your app.js endpoints
-const registerWithEmail = async (email, password) => {
-  const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Registration failed.');
-  return data;
-};
-
-const sendVerificationCode = async (email) => {
-  const res = await fetch(`${API_BASE_URL}/api/auth/send-verification-code`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Failed to send code.');
-  return data;
-};
-
-const verifyEmailCode = async (email, code) => {
-  const res = await fetch(`${API_BASE_URL}/api/auth/verify-code`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, code }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Verification failed.');
-  return data;
-};
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 
 export default function Register() {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [registered, setRegistered] = useState(false);
 
-  // --- Code verification state ---
-  const [code, setCode] = useState(['', '', '', '', '', '']);
-  const [codeError, setCodeError] = useState('');
-  const [verifying, setVerifying] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [resending, setResending] = useState(false);
-  const [pendingUser, setPendingUser] = useState(null);
-  const inputRefs = useRef([]);
+  const [resendMsg, setResendMsg] = useState('');
 
-  const navigate = useNavigate();
+  const RAW_API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://skillforge-backend-4wd6.onrender.com';
+  const API_BASE = RAW_API_BASE.replace(/\/$/, '');
 
-  // Countdown for resend cooldown
   useEffect(() => {
     if (resendCooldown <= 0) return;
-    const timer = setInterval(() => {
-      setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
+    const timer = setInterval(() => setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0)), 1000);
     return () => clearInterval(timer);
   }, [resendCooldown]);
 
@@ -74,16 +31,27 @@ export default function Register() {
       setError('Passwords do not match.');
       return;
     }
+    if (password.length < 6) {
+      setError('Password should be at least 6 characters.');
+      return;
+    }
 
     setLoading(true);
 
     try {
-      // Calls app.js /api/auth/register endpoint (which creates user & dispatches Brevo email)
-      await registerWithEmail(email, password);
-      setPendingUser({ email });
+      const res = await fetch(`${API_BASE}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password }),
+      });
 
-      // Show code entry modal
-      setShowVerificationModal(true);
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Failed to create account.');
+      }
+
+      setRegistered(true);
       setResendCooldown(60);
     } catch (err) {
       console.error('Registration Error:', err);
@@ -93,94 +61,77 @@ export default function Register() {
     }
   };
 
-  const handleCodeChange = (index, value) => {
-    // Only allow single digits
-    if (value && !/^\d$/.test(value)) return;
-
-    const newCode = [...code];
-    newCode[index] = value;
-    setCode(newCode);
-    setCodeError('');
-
-    // Auto-advance to next box
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleCodeKeyDown = (index, e) => {
-    if (e.key === 'Backspace' && !code[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handleCodePaste = (e) => {
-    e.preventDefault();
-    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-    if (!pasted) return;
-    const newCode = [...code];
-    for (let i = 0; i < 6; i++) {
-      newCode[i] = pasted[i] || '';
-    }
-    setCode(newCode);
-    const nextEmptyIndex = newCode.findIndex((d) => !d);
-    inputRefs.current[nextEmptyIndex === -1 ? 5 : nextEmptyIndex]?.focus();
-  };
-
-  const handleVerifyCode = async (e) => {
-    e.preventDefault();
-    setCodeError('');
-
-    const fullCode = code.join('');
-    if (fullCode.length !== 6) {
-      setCodeError('Please enter the full 6-digit code.');
-      return;
-    }
-
-    setVerifying(true);
-    try {
-      // Calls app.js /api/auth/verify-code endpoint
-      const response = await verifyEmailCode(email, fullCode);
-
-      if (response?.success) {
-        setShowVerificationModal(false);
-        navigate('/login', {
-          replace: true,
-          state: { verified: true, email },
-        });
-      } else {
-        setCodeError(response?.message || 'Invalid or expired code. Please try again.');
-      }
-    } catch (err) {
-      console.error('Verification Error:', err);
-      setCodeError(err.message || 'Invalid or expired code. Please try again.');
-    } finally {
-      setVerifying(false);
-    }
-  };
-
-  const handleResendCode = async () => {
+  const handleResend = async () => {
     if (resendCooldown > 0 || resending) return;
     setResending(true);
-    setCodeError('');
+    setResendMsg('');
     try {
-      // Calls app.js /api/auth/send-verification-code endpoint
-      await sendVerificationCode(email);
+      const res = await fetch(`${API_BASE}/api/auth/resend-verification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Failed to resend verification email.');
+      }
+      setResendMsg('Verification email resent!');
       setResendCooldown(60);
-      setCode(['', '', '', '', '', '']);
-      inputRefs.current[0]?.focus();
     } catch (err) {
-      console.error('Resend Error:', err);
-      setCodeError(err.message || 'Failed to resend code. Please try again.');
+      setResendMsg(err.message || 'Failed to resend verification email.');
     } finally {
       setResending(false);
     }
   };
 
+  if (registered) {
+    return (
+      <div className="min-h-screen bg-[#0B1130] text-white flex items-center justify-center px-4 font-sans">
+        <div className="max-w-md w-full bg-[#111936] p-8 rounded-xl border border-gray-800 shadow-2xl text-center">
+          <div className="w-12 h-12 bg-blue-600/20 text-blue-400 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 002-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+          </div>
+          <h3 className="text-lg font-bold text-white mb-2">Check Your Inbox</h3>
+          <p className="text-xs text-gray-300 mb-6">
+            We sent a verification link to <span className="text-blue-400 font-semibold">{email}</span>.
+            Click it to activate your account, then come back and log in.
+          </p>
+
+          {resendMsg && (
+            <div className="mb-4 p-2.5 bg-blue-500/10 border border-blue-500/30 rounded-lg text-blue-300 text-xs text-center">
+              {resendMsg}
+            </div>
+          )}
+
+          <Link
+            to="/login"
+            className="block w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-lg transition mb-3"
+          >
+            Go to Login
+          </Link>
+
+          <button
+            onClick={handleResend}
+            disabled={resendCooldown > 0 || resending}
+            className="text-xs text-gray-400 hover:text-blue-400 disabled:text-gray-600 transition cursor-pointer"
+          >
+            {resending
+              ? 'Resending...'
+              : resendCooldown > 0
+              ? `Resend link in ${resendCooldown}s`
+              : "Didn't get the email? Resend"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#0B1130] text-white flex items-center justify-center px-4 font-sans relative">
       <div className="max-w-md w-full bg-[#111936] p-8 rounded-xl border border-gray-800 shadow-2xl">
-        
+
         <div className="text-center mb-6">
           <h2 className="text-2xl font-bold tracking-tight">Create a Skillforge Account</h2>
         </div>
@@ -192,6 +143,20 @@ export default function Register() {
         )}
 
         <form onSubmit={handleRegister} className="space-y-4">
+          <div>
+            <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+              Full Name
+            </label>
+            <input
+              type="text"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Jane Banda"
+              className="w-full px-4 py-2.5 bg-[#0B1130] border border-gray-800 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500 transition"
+            />
+          </div>
+
           <div>
             <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
               Email Address
@@ -250,67 +215,6 @@ export default function Register() {
           </Link>
         </div>
       </div>
-
-      {/* Verification Code Modal */}
-      {showVerificationModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-[#111936] border border-gray-800 p-6 rounded-xl max-w-sm w-full text-center shadow-2xl">
-            <div className="w-12 h-12 bg-blue-600/20 text-blue-400 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 002-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-              </svg>
-            </div>
-            <h3 className="text-lg font-bold text-white mb-2">Verify Your Email</h3>
-            <p className="text-xs text-gray-300 mb-6">
-              We sent a 6-digit code to <span className="text-blue-400 font-semibold">{email}</span>. Enter it below to confirm your email.
-            </p>
-
-            <form onSubmit={handleVerifyCode}>
-              <div className="flex justify-center gap-2 mb-4" onPaste={handleCodePaste}>
-                {code.map((digit, index) => (
-                  <input
-                    key={index}
-                    ref={(el) => (inputRefs.current[index] = el)}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) => handleCodeChange(index, e.target.value)}
-                    onKeyDown={(e) => handleCodeKeyDown(index, e)}
-                    className="w-10 h-12 text-center text-lg font-semibold bg-[#0B1130] border border-gray-800 rounded-lg text-white focus:outline-none focus:border-blue-500 transition"
-                  />
-                ))}
-              </div>
-
-              {codeError && (
-                <div className="mb-4 p-2.5 bg-red-500/20 border border-red-500/40 rounded-lg text-red-300 text-xs text-center font-medium">
-                  {codeError}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={verifying}
-                className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 text-white text-sm font-semibold rounded-lg transition cursor-pointer"
-              >
-                {verifying ? 'Verifying...' : 'Verify & Continue'}
-              </button>
-            </form>
-
-            <button
-              onClick={handleResendCode}
-              disabled={resendCooldown > 0 || resending}
-              className="mt-4 text-xs text-gray-400 hover:text-blue-400 disabled:text-gray-600 transition cursor-pointer"
-            >
-              {resending
-                ? 'Resending...'
-                : resendCooldown > 0
-                ? `Resend code in ${resendCooldown}s`
-                : "Didn't get a code? Resend"}
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
