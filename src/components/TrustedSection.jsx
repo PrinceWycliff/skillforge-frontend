@@ -7,29 +7,29 @@ const TrustedSection = () => {
       id: 1,
       number: '10,000+',
       label: 'Active Students',
-      icon: <FaUsers size={24} color="#ffffff" />,
-      gradient: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)',
+      icon: <FaUsers size={24} className="text-white" />,
+      gradient: 'linear-gradient(135deg, #a855f7 0%, #6366f1 100%)',
     },
     {
       id: 2,
       number: '500+',
       label: 'Courses Available',
-      icon: <FaAward size={24} color="#ffffff" />,
+      icon: <FaAward size={24} className="text-white" />,
       gradient: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
     },
     {
       id: 3,
       number: '50+',
       label: 'Partner Institutions',
-      icon: <FaBuilding size={24} color="#ffffff" />,
-      gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+      icon: <FaBuilding size={24} className="text-white" />,
+      gradient: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)',
     },
     {
       id: 4,
       number: '95%',
       label: 'Success Rate',
-      icon: <FaChartLine size={24} color="#ffffff" />,
-      gradient: 'linear-gradient(135deg, #f97316 0%, #ef4444 100%)',
+      icon: <FaChartLine size={24} className="text-white" />,
+      gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
     },
   ];
 
@@ -89,12 +89,14 @@ const TrustedSection = () => {
   );
 };
 
-// Component Styles matching light/purple gradient marketing aesthetic
+// Dark-theme styles matching #0B1130 background & purple brand accents
 const sectionStyle = {
-  background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 50%, #faf5ff 100%)',
+  backgroundColor: '#0B1130',
   padding: '4rem 1.5rem',
   fontFamily: 'sans-serif',
-  color: '#0f172a',
+  color: '#ffffff',
+  borderTop: '1px solid #1e293b',
+  borderBottom: '1px solid #1e293b',
 };
 
 const containerStyle = {
@@ -110,15 +112,15 @@ const statsGridStyle = {
 };
 
 const statCardStyle = {
-  backgroundColor: '#ffffff',
+  backgroundColor: '#131b4d',
   borderRadius: '1.25rem',
   padding: '2rem 1.5rem',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
   textAlign: 'center',
-  boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01)',
-  border: '1px solid rgba(226, 232, 240, 0.8)',
+  boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
+  border: '1px solid #1e295d',
 };
 
 const iconBadgeStyle = {
@@ -129,19 +131,19 @@ const iconBadgeStyle = {
   alignItems: 'center',
   justifyContent: 'center',
   marginBottom: '1rem',
-  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+  boxShadow: '0 4px 14px rgba(0, 0, 0, 0.4)',
 };
 
 const statNumberStyle = {
   fontSize: '2.25rem',
   fontWeight: '800',
-  color: '#0f172a',
+  color: '#ffffff',
   margin: '0 0 0.25rem 0',
 };
 
 const statLabelStyle = {
   fontSize: '0.9rem',
-  color: '#64748b',
+  color: '#94a3b8',
   fontWeight: '600',
   margin: 0,
 };
@@ -154,22 +156,21 @@ const headerWrapperStyle = {
 const pillBadgeStyle = {
   display: 'inline-flex',
   alignItems: 'center',
-  padding: '0.4rem 1rem',
+  padding: '0.4rem 1.1rem',
   borderRadius: '9999px',
-  backgroundColor: '#ffffff',
-  border: '1px solid #e9d5ff',
-  color: '#7e22ce',
+  backgroundColor: '#1e1b4b',
+  border: '1px solid #3b0764',
+  color: '#c084fc',
   fontSize: '0.85rem',
   fontWeight: '700',
   marginBottom: '1rem',
-  boxShadow: '0 2px 6px rgba(126, 34, 206, 0.08)',
 };
 
 const headlineStyle = {
   fontSize: '2.5rem',
   fontWeight: '900',
   letterSpacing: '-0.025em',
-  background: 'linear-gradient(135deg, #7c3aed 0%, #c026d3 100%)',
+  background: 'linear-gradient(135deg, #ffffff 0%, #c084fc 100%)',
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
   margin: '0 0 0.75rem 0',
@@ -177,7 +178,7 @@ const headlineStyle = {
 
 const subheadingStyle = {
   fontSize: '1.1rem',
-  color: '#64748b',
+  color: '#94a3b8',
   margin: 0,
 };
 
@@ -188,24 +189,24 @@ const partnerGridStyle = {
 };
 
 const partnerCardStyle = {
-  backgroundColor: '#ffffff',
+  backgroundColor: '#131b4d',
   borderRadius: '0.85rem',
   padding: '1.25rem 1rem',
   textAlign: 'center',
-  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.03)',
-  border: '1px solid #f1f5f9',
+  border: '1px solid #1e295d',
+  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
 };
 
 const partnerNameStyle = {
   fontSize: '1.1rem',
   fontWeight: '800',
-  color: '#1e293b',
+  color: '#f8fafc',
   marginBottom: '0.2rem',
 };
 
 const partnerCategoryStyle = {
   fontSize: '0.75rem',
-  color: '#94a3b8',
+  color: '#64748b',
   fontWeight: '500',
 };
 
