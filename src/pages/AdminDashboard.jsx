@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
 
+// Automatically uses Vercel / Vite / React env variables or falls back to backend host
+const API_BASE_URL = 
+  process.env.REACT_APP_API_URL || 
+  import.meta.env?.VITE_API_URL || 
+  'https://skillforge-backend.onrender.com'; // Adjust fallback to your active backend host URL if different
+
 const AdminDashboard = () => {
   const [adminUser, setAdminUser] = useState(null);
   const [activeTab, setActiveTab] = useState('users');
@@ -28,7 +34,7 @@ const AdminDashboard = () => {
   });
 
   useEffect(() => {
-    // 1. Retrieve Logged-in Admin Info from Session / LocalStorage
+    // Retrieve Logged-in Admin Info from Session / LocalStorage
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       try {
@@ -39,7 +45,7 @@ const AdminDashboard = () => {
     }
     fetchDashboardData();
 
-    // Auto refresh active state every 30 seconds
+    // Refresh active metrics every 30 seconds
     const interval = setInterval(fetchDashboardData, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -52,29 +58,31 @@ const AdminDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       // Fetch Analytics Overview & Chart Data
-      const analyticsRes = await fetch('/api/admin/analytics', { headers: getAuthHeader() });
+      const analyticsRes = await fetch(`${API_BASE_URL}/api/admin/analytics`, { headers: getAuthHeader() });
       const analyticsData = await analyticsRes.json();
       if (analyticsData.success) {
         setStats(analyticsData.stats);
         setChartData(analyticsData.chartData || []);
+      } else {
+        showMessage('error', analyticsData.message || 'Failed to synchronize dashboard metrics.');
       }
 
       // Fetch System Accounts
-      const usersRes = await fetch('/api/admin/users', { headers: getAuthHeader() });
+      const usersRes = await fetch(`${API_BASE_URL}/api/admin/users`, { headers: getAuthHeader() });
       const usersData = await usersRes.json();
       if (usersData.success) {
         setUsers(usersData.users || []);
       }
 
       // Fetch Instructors
-      const instructorsRes = await fetch('/api/admin/instructors', { headers: getAuthHeader() });
+      const instructorsRes = await fetch(`${API_BASE_URL}/api/admin/instructors`, { headers: getAuthHeader() });
       const instructorsData = await instructorsRes.json();
       if (instructorsData.success) {
         setInstructors(instructorsData.instructors || []);
       }
     } catch (err) {
       console.error('Dashboard Fetch Error:', err);
-      showMessage('error', 'Failed to synchronize dashboard metrics.');
+      showMessage('error', `Failed to connect to API backend at ${API_BASE_URL}`);
     } finally {
       setLoading(false);
     }
@@ -82,13 +90,13 @@ const AdminDashboard = () => {
 
   const showMessage = (type, text) => {
     setMessage({ type, text });
-    setTimeout(() => setMessage({ type: '', text: '' }), 4000);
+    setTimeout(() => setMessage({ type: '', text: '' }), 5000);
   };
 
   const handleCreateAccount = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/admin/users', {
+      const res = await fetch(`${API_BASE_URL}/api/admin/users`, {
         method: 'POST',
         headers: getAuthHeader(),
         body: JSON.stringify(newUser)
@@ -111,7 +119,7 @@ const AdminDashboard = () => {
   const handleToggleStatus = async (userId, currentStatus) => {
     const nextStatus = currentStatus === 'suspended' ? 'active' : 'suspended';
     try {
-      const res = await fetch(`/api/admin/users/${userId}/status`, {
+      const res = await fetch(`${API_BASE_URL}/api/admin/users/${userId}/status`, {
         method: 'PUT',
         headers: getAuthHeader(),
         body: JSON.stringify({ status: nextStatus })
@@ -133,7 +141,7 @@ const AdminDashboard = () => {
     if (!window.confirm('Are you sure you want to permanently delete this user account?')) return;
 
     try {
-      const res = await fetch(`/api/admin/users/${userId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/admin/users/${userId}`, {
         method: 'DELETE',
         headers: getAuthHeader()
       });
@@ -174,7 +182,7 @@ const AdminDashboard = () => {
   return (
     <div style={{ backgroundColor: '#0b0f19', color: '#f3f4f6', minHeight: '100vh', padding: '2rem', fontFamily: 'sans-serif' }}>
       
-      {/* Top Header showing Logged-In Admin Name dynamically */}
+      {/* Top Header displaying dynamic active admin details */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', borderBottom: '1px solid #1e293b', paddingBottom: '1rem' }}>
         <div>
           <span style={{ fontSize: '0.75rem', letterSpacing: '0.05em', color: '#38bdf8', fontWeight: 'bold' }}>
@@ -185,7 +193,7 @@ const AdminDashboard = () => {
           </h1>
         </div>
 
-        {/* Dynamic Logged-in Admin User Identity */}
+        {/* Dynamic Logged-in Admin Account Badge */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <div style={{ textAlign: 'right' }}>
             <div style={{ color: '#ffffff', fontWeight: 'bold', fontSize: '0.95rem' }}>
@@ -201,7 +209,7 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Notifications Banner */}
+      {/* Message / Error Notification Banner */}
       {message.text && (
         <div style={{ padding: '0.75rem 1rem', marginBottom: '1.5rem', borderRadius: '0.5rem', backgroundColor: message.type === 'error' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)', border: message.type === 'error' ? '1px solid #ef4444' : '1px solid #10b981', color: message.type === 'error' ? '#fca5a5' : '#6ee7b7' }}>
           {message.text}
@@ -245,33 +253,39 @@ const AdminDashboard = () => {
 
         {/* Visual CSS Bar Chart */}
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: '1.5rem', height: '180px', padding: '1rem 0', borderBottom: '1px solid #1e293b' }}>
-          {chartData.map((bar, idx) => {
-            const heightPercent = Math.round((bar.count / maxChartValue) * 100);
-            return (
-              <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
-                <span style={{ color: '#38bdf8', fontSize: '0.75rem', fontWeight: 'bold', marginBottom: '0.4rem' }}>
-                  {bar.count}
-                </span>
-                <div
-                  style={{
-                    width: '100%',
-                    maxWidth: '45px',
-                    height: `${Math.max(heightPercent, 10)}%`,
-                    backgroundColor: '#2563eb',
-                    borderRadius: '4px 4px 0 0',
-                    transition: 'height 0.3s ease'
-                  }}
-                />
-                <span style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '0.5rem' }}>
-                  {bar.month}
-                </span>
-              </div>
-            );
-          })}
+          {chartData.length > 0 ? (
+            chartData.map((bar, idx) => {
+              const heightPercent = Math.round((bar.count / maxChartValue) * 100);
+              return (
+                <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
+                  <span style={{ color: '#38bdf8', fontSize: '0.75rem', fontWeight: 'bold', marginBottom: '0.4rem' }}>
+                    {bar.count}
+                  </span>
+                  <div
+                    style={{
+                      width: '100%',
+                      maxWidth: '45px',
+                      height: `${Math.max(heightPercent, 10)}%`,
+                      backgroundColor: '#2563eb',
+                      borderRadius: '4px 4px 0 0',
+                      transition: 'height 0.3s ease'
+                    }}
+                  />
+                  <span style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '0.5rem' }}>
+                    {bar.month}
+                  </span>
+                </div>
+              );
+            })
+          ) : (
+            <div style={{ width: '100%', textAlign: 'center', color: '#64748b', padding: '3rem 0' }}>
+              No monthly growth analytics recorded yet.
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs Header */}
       <div style={{ display: 'flex', gap: '2rem', borderBottom: '1px solid #1e293b', marginBottom: '1.5rem' }}>
         <button
           onClick={() => setActiveTab('users')}
@@ -374,7 +388,7 @@ const AdminDashboard = () => {
               ) : (
                 <tr>
                   <td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>
-                    No accounts found matching search criteria.
+                    No system accounts found matching your search.
                   </td>
                 </tr>
               )}
@@ -494,7 +508,7 @@ const AdminDashboard = () => {
   );
 };
 
-// Custom Dark Styles
+// Dark Mode Component Styles
 const cardStyle = { backgroundColor: '#111827', padding: '1.25rem', borderRadius: '0.75rem', border: '1px solid #1e293b' };
 const cardLabelStyle = { fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 'bold' };
 const cardValueStyle = { margin: '0.5rem 0 0 0', fontSize: '1.875rem', color: '#ffffff', fontWeight: 'bold' };
