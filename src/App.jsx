@@ -43,7 +43,7 @@ export default function App() {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/verify-email" element={<VerifyEmail />} />
 
-            {/* Admin Routes */}
+            {/* Admin Routes (Direct Access via URL) */}
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route 
               path="/admin/dashboard" 
@@ -54,7 +54,7 @@ export default function App() {
               } 
             />
 
-            {/* Instructor Routes */}
+            {/* Instructor Routes (Direct Access via URL) */}
             <Route path="/instructor/login" element={<InstructorLogin />} />
             <Route 
               path="/instructor/studio" 
