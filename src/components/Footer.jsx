@@ -68,18 +68,17 @@ const Footer = () => {
           </ul>
         </div>
 
-        {/* Column 4: Legal Links */}
-        <div style={columnStyle}>
-          <h4 style={headingStyle}>Legal</h4>
-          <ul style={listStyle}>
-            <li><Link to="/terms" style={linkStyle}>Terms of Service</Link></li>
-            <li><Link to="/privacy" style={linkStyle}>Privacy Policy</Link></li>
-            <li><Link to="/cookie-policy" style={linkStyle}>Cookie Policy</Link></li>
-            <li><Link to="/refund-policy" style={linkStyle}>Refund Policy</Link></li>
-            <li><Link to="/accessibility" style={linkStyle}>Accessibility</Link></li>
-          </ul>
-        </div>
-
+                {/* Column 4: Legal & Portals */}
+            <div style={columnStyle}>
+            <h4 style={headingStyle}>Legal</h4>
+            <ul style={listStyle}>
+                <li><Link to="/terms" style={linkStyle}>Terms of Service</Link></li>
+                <li><Link to="/privacy" style={linkStyle}>Privacy Policy</Link></li>
+                {/* Internal / Staff Portals */}
+                <li><Link to="/instructor/login" style={linkStyle}>Instructor Portal</Link></li>
+                <li><Link to="/admin/login" style={linkStyle}>Admin Portal</Link></li>
+            </ul>
+            </div>
         {/* Column 5: Newsletter */}
         <div style={columnStyle}>
           <h4 style={headingStyle}>Newsletter</h4>

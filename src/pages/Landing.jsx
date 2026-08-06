@@ -84,12 +84,6 @@ export default function Landing() {
           <TrustedSection />
       </main>
 
-      {/* 3. FOOTER (INCLUDED INSIDE JSX RETURN) */}
-      <footer className="border-t border-gray-800/80 py-8 text-center text-xs text-gray-500">
-        <p>© 2026 SkillForge. All rights reserved.</p>
-        
-       
-      </footer>
 
     </div>
   );
