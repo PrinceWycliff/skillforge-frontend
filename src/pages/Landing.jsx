@@ -88,15 +88,7 @@ export default function Landing() {
       <footer className="border-t border-gray-800/80 py-8 text-center text-xs text-gray-500">
         <p>© 2026 SkillForge. All rights reserved.</p>
         
-        {/* Discreet Portal Links */}
-        <div className="mt-2 flex justify-center gap-6">
-          <Link to="/instructor/login" className="hover:text-gray-400 transition">
-            Instructor Portal
-          </Link>
-          <Link to="/admin/login" className="hover:text-gray-400 transition">
-            Admin Access
-          </Link>
-        </div>
+       
       </footer>
 
     </div>
