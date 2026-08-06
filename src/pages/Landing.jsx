@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import TrustedSection from '../components/TrustedSection';
 
 export default function Landing() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -58,6 +59,8 @@ export default function Landing() {
       {/* 2. HERO BANNER */}
       <main className="flex-1 flex flex-col justify-center items-center text-center px-4 py-16 md:py-24">
         <div className="max-w-3xl mx-auto flex flex-col items-center">
+          {/* Social Proof & Partner Section */}
+          <TrustedSection />
           
           {/* Clean Main Headline */}
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight leading-tight mb-4">
