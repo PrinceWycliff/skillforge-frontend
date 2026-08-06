@@ -22,7 +22,7 @@ const Footer = () => {
         {/* Column 1: Brand & Bio */}
         <div style={columnStyle}>
           <div style={brandHeaderStyle}>
-            <div style={logoBadgeStyle}>A</div>
+            <div style={logoBadgeStyle}>S</div>
             <span style={brandTitleStyle}>SkillForge</span>
           </div>
           <p style={descriptionStyle}>
@@ -112,7 +112,7 @@ const Footer = () => {
 
 // Layout & Theme Styles matching image palette
 const footerStyle = {
-  backgroundColor: '#0b0f19',
+  backgroundColor: '#04042C',
   color: '#94a3b8',
   paddingTop: '3.5rem',
   paddingBottom: '1.5rem',
@@ -142,7 +142,7 @@ const brandHeaderStyle = {
 };
 
 const logoBadgeStyle = {
-  backgroundColor: '#9333ea',
+  backgroundColor: '#3A82F6',
   color: '#ffffff',
   width: '38px',
   height: '38px',
