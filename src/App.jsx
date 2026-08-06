@@ -16,6 +16,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
+import Footer from './components/Footer'; // Import Footer
 
 // Inline Guard for Instructor Studio
 const InstructorRoute = ({ children }) => {
@@ -26,63 +27,69 @@ const InstructorRoute = ({ children }) => {
 export default function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-[#0B1130] text-white">
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Landing />} />
-          <Route path="/catalog" element={<Catalog />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/contact" element={<ContactSupport />} />
-          
-          {/* Password Recovery Routes */}
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/verify-email" element={<VerifyEmail />} />
+      <div className="flex flex-col min-h-screen bg-[#0B1130] text-white">
+        {/* Main Content Area expands to fill remaining vertical space */}
+        <main className="flex-grow">
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<Landing />} />
+            <Route path="/catalog" element={<Catalog />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/contact" element={<ContactSupport />} />
+            
+            {/* Password Recovery Routes */}
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
 
-          {/* Admin Routes */}
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route 
-            path="/admin/dashboard" 
-            element={
-              <AdminRoute>
-                <AdminDashboard />
-              </AdminRoute>
-            } 
-          />
+            {/* Admin Routes */}
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route 
+              path="/admin/dashboard" 
+              element={
+                <AdminRoute>
+                  <AdminDashboard />
+                </AdminRoute>
+              } 
+            />
 
-          {/* Instructor Routes */}
-          <Route path="/instructor/login" element={<InstructorLogin />} />
-          <Route 
-            path="/instructor/studio" 
-            element={
-              <InstructorRoute>
-                <InstructorStudio />
-              </InstructorRoute>
-            } 
-          />
+            {/* Instructor Routes */}
+            <Route path="/instructor/login" element={<InstructorLogin />} />
+            <Route 
+              path="/instructor/studio" 
+              element={
+                <InstructorRoute>
+                  <InstructorStudio />
+                </InstructorRoute>
+              } 
+            />
 
-          {/* Student Protected Routes */}
-          <Route 
-            path="/dashboard" 
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/player/:courseId" 
-            element={
-              <ProtectedRoute>
-                <Player />
-              </ProtectedRoute>
-            } 
-          />
+            {/* Student Protected Routes */}
+            <Route 
+              path="/dashboard" 
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/player/:courseId" 
+              element={
+                <ProtectedRoute>
+                  <Player />
+                </ProtectedRoute>
+              } 
+            />
 
-          {/* Fallback Catch-all Route */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+            {/* Fallback Catch-all Route */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </main>
+
+        {/* Global Iconic Footer */}
+        <Footer />
       </div>
     </Router>
   );
