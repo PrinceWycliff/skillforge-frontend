@@ -1,55 +1,500 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { FaPlay, FaGraduationCap, FaBookOpen, FaCheckCircle, FaAward } from 'react-icons/fa';
 
-export default function Dashboard() {
+const API_BASE_URL = import.meta.env?.VITE_API_URL || 'https://skillforge-backend.onrender.com';
+
+const Dashboard = () => {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [enrolledCourses, setEnrolledCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error("Error parsing user from localStorage", e);
-      }
-    }
+    fetchDashboardData();
   }, []);
 
-  const displayName = 
-    user?.full_name || 
-    user?.fullName || 
-    user?.email?.split('@')[0] || 
-    'Student';
+  const fetchDashboardData = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Fetch user profile and enrolled courses from backend
+      const res = await fetch(`${API_BASE_URL}/api/users/me`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to fetch dashboard data');
+      }
+
+      const data = await res.json();
+      
+      // Store user and enrolled courses list (fallback to empty array if none)
+      setUser(data.user || data);
+      
+      // Look for enrolled courses in possible backend payload structures
+      const courses = data.enrolledCourses || data.user?.enrolledCourses || data.enrollments || [];
+      setEnrolledCourses(courses);
+    } catch (err) {
+      console.error('Error loading dashboard:', err);
+      setError('Unable to load your enrolled courses. Please check your network connection.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Identify the most recent/in-progress course for the top Resume Banner
+  const lastActiveCourse = enrolledCourses.length > 0 ? enrolledCourses[0] : null;
+
+  if (loading) {
+    return (
+      <div style={loadingContainerStyle}>
+        <div style={spinnerStyle}></div>
+        <p style={{ color: '#94a3b8', marginTop: '1rem' }}>Loading your learning dashboard...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-8 max-w-7xl mx-auto min-h-screen text-white">
-      {/* Dynamic Welcome Banner */}
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold">
-          Welcome back, <span className="text-blue-400">{displayName}</span>! 👋
-        </h1>
-        <p className="text-gray-400 mt-2">
-          Track your enrolled tracks, assessment scores, and verified digital certificates.
-        </p>
-      </header>
-
-      {/* Courses / Tracks Section */}
-      <section className="mt-8">
-        <h2 className="text-xl font-semibold mb-4">My Enrolled Courses</h2>
+    <div style={pageContainerStyle}>
+      <div style={contentWrapperStyle}>
         
-        <div className="bg-gray-800/60 p-8 rounded-xl text-center border border-gray-700 max-w-2xl">
-          <h3 className="text-lg font-semibold text-gray-200 mb-2">No Enrolled Courses Yet</h3>
-          <p className="text-gray-400 text-sm mb-6">
-            Explore the catalog to enroll in IT, Networking, or Software Engineering tracks tailored for you.
-          </p>
-          <Link 
-            to="/catalog" 
-            className="inline-block bg-blue-600 hover:bg-blue-500 text-white font-medium px-5 py-2.5 rounded-lg transition shadow-md"
-          >
-            Explore Course Catalog
+        {/* User Welcome Header */}
+        <header style={welcomeHeaderStyle}>
+          <div>
+            <h1 style={welcomeTitleStyle}>
+              Welcome back, {user?.name || user?.fullName || 'Learner'}! 👋
+            </h1>
+            <p style={welcomeSubtitleStyle}>
+              Track your learning progress, continue active courses, and acquire new skills.
+            </p>
+          </div>
+          <Link to="/catalog" style={browseCatalogButtonStyle}>
+            <FaBookOpen style={{ marginRight: '8px' }} /> Explore Catalog
           </Link>
-        </div>
-      </section>
+        </header>
+
+        {error && <div style={errorMessageStyle}>{error}</div>}
+
+        {/* Empty State: If student hasn't enrolled in any courses yet */}
+        {enrolledCourses.length === 0 ? (
+          <div style={emptyStateCardStyle}>
+            <div style={emptyIconWrapperStyle}>
+              <FaGraduationCap size={42} color="#c084fc" />
+            </div>
+            <h3 style={{ fontSize: '1.5rem', color: '#ffffff', marginBottom: '0.5rem' }}>
+              No Enrolled Courses Found
+            </h3>
+            <p style={{ color: '#94a3b8', maxWidth: '480px', margin: '0 auto 1.5rem auto' }}>
+              You haven't enrolled in any courses yet. Browse our course catalog to start learning today!
+            </p>
+            <Link to="/catalog" style={primaryBtnStyle}>
+              Browse Available Courses
+            </Link>
+          </div>
+        ) : (
+          <>
+            {/* 1. Feature Banner: Continue Learning / Resume Most Recent Course */}
+            {lastActiveCourse && (
+              <div style={resumeBannerStyle}>
+                <div style={{ flex: 1 }}>
+                  <span style={resumeTagStyle}>RESUME LEARNING</span>
+                  <h2 style={resumeCourseTitleStyle}>
+                    {lastActiveCourse.title || lastActiveCourse.course?.title || 'Enrolled Course'}
+                  </h2>
+                  <p style={{ color: '#cbd5e1', fontSize: '0.95rem', marginBottom: '1rem' }}>
+                    {lastActiveCourse.description || lastActiveCourse.course?.description || 'Pick up right where you left off.'}
+                  </p>
+                  
+                  {/* Progress Bar inside banner */}
+                  <div style={bannerProgressWrapperStyle}>
+                    <div style={bannerProgressBarBgStyle}>
+                      <div
+                        style={{
+                          ...bannerProgressBarFillStyle,
+                          width: `${lastActiveCourse.progress || 15}%`,
+                        }}
+                      ></div>
+                    </div>
+                    <span style={{ fontSize: '0.85rem', color: '#c084fc', fontWeight: 'bold' }}>
+                      {lastActiveCourse.progress || 15}% Completed
+                    </span>
+                  </div>
+                </div>
+
+                <Link
+                  to={`/player/${lastActiveCourse._id || lastActiveCourse.id || lastActiveCourse.course?._id}`}
+                  style={resumeBtnStyle}
+                >
+                  <FaPlay style={{ marginRight: '8px', fontSize: '0.9rem' }} /> Resume Course
+                </Link>
+              </div>
+            )}
+
+            {/* Quick Stats Summary */}
+            <div style={statsGridStyle}>
+              <div style={statCardStyle}>
+                <FaBookOpen size={24} color="#a855f7" />
+                <div>
+                  <h4 style={statNumberStyle}>{enrolledCourses.length}</h4>
+                  <p style={statLabelStyle}>Enrolled Courses</p>
+                </div>
+              </div>
+              <div style={statCardStyle}>
+                <FaCheckCircle size={24} color="#10b981" />
+                <div>
+                  <h4 style={statNumberStyle}>
+                    {enrolledCourses.filter((c) => (c.progress || 0) === 100).length}
+                  </h4>
+                  <p style={statLabelStyle}>Completed Courses</p>
+                </div>
+              </div>
+              <div style={statCardStyle}>
+                <FaAward size={24} color="#f59e0b" />
+                <div>
+                  <h4 style={statNumberStyle}>
+                    {enrolledCourses.filter((c) => (c.progress || 0) === 100).length}
+                  </h4>
+                  <p style={statLabelStyle}>Certificates Earned</p>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Enrolled Courses Grid */}
+            <h3 style={sectionHeadingStyle}>My Enrolled Courses</h3>
+            <div style={courseGridStyle}>
+              {enrolledCourses.map((item) => {
+                const course = item.course || item;
+                const progressVal = item.progress || 0;
+                const courseId = course._id || course.id || item._id;
+
+                return (
+                  <div key={courseId} style={courseCardStyle}>
+                    {/* Thumbnail placeholder */}
+                    <div style={thumbnailWrapperStyle}>
+                      <img
+                        src={course.thumbnailUrl || 'https://via.placeholder.com/350x180/131b4d/ffffff?text=SkillForge+Course'}
+                        alt={course.title}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    </div>
+
+                    <div style={{ padding: '1.25rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                      <h4 style={courseTitleStyle}>{course.title || 'Untitled Course'}</h4>
+                      <p style={courseCategoryStyle}>{course.category || 'General'}</p>
+
+                      {/* Individual Progress Bar */}
+                      <div style={{ marginTop: 'auto', paddingTop: '1rem' }}>
+                        <div style={progressLabelRowStyle}>
+                          <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Progress</span>
+                          <span style={{ fontSize: '0.8rem', color: '#c084fc', fontWeight: 'bold' }}>
+                            {progressVal}%
+                          </span>
+                        </div>
+                        <div style={progressBarBgStyle}>
+                          <div style={{ ...progressBarFillStyle, width: `${progressVal}%` }}></div>
+                        </div>
+
+                        {/* Card Action Link */}
+                        <Link to={`/player/${courseId}`} style={cardActionBtnStyle}>
+                          {progressVal > 0 ? 'Continue Course' : 'Start Course'}
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+      </div>
     </div>
   );
-}
+};
+
+// Layout & Theme Styles matching #0B1130 palette
+const pageContainerStyle = {
+  backgroundColor: '#0B1130',
+  minHeight: '100vh',
+  padding: '2.5rem 1.5rem',
+  color: '#ffffff',
+  fontFamily: 'sans-serif',
+};
+
+const contentWrapperStyle = {
+  maxWidth: '1100px',
+  margin: '0 auto',
+};
+
+const welcomeHeaderStyle = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  flexWrap: 'wrap',
+  gap: '1rem',
+  marginBottom: '2rem',
+};
+
+const welcomeTitleStyle = {
+  fontSize: '2rem',
+  fontWeight: '800',
+  margin: '0 0 0.25rem 0',
+  color: '#ffffff',
+};
+
+const welcomeSubtitleStyle = {
+  fontSize: '0.95rem',
+  color: '#94a3b8',
+  margin: 0,
+};
+
+const browseCatalogButtonStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  padding: '0.65rem 1.25rem',
+  borderRadius: '0.5rem',
+  backgroundColor: '#1e295d',
+  color: '#ffffff',
+  textDecoration: 'none',
+  fontWeight: '600',
+  fontSize: '0.9rem',
+  border: '1px solid #3b82f6',
+};
+
+const resumeBannerStyle = {
+  background: 'linear-gradient(135deg, #1e1b4b 0%, #311042 100%)',
+  border: '1px solid #6b21a8',
+  borderRadius: '1rem',
+  padding: '2rem',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  flexWrap: 'wrap',
+  gap: '1.5rem',
+  marginBottom: '2.5rem',
+  boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)',
+};
+
+const resumeTagStyle = {
+  display: 'inline-block',
+  fontSize: '0.75rem',
+  fontWeight: '800',
+  letterSpacing: '0.05em',
+  color: '#c084fc',
+  marginBottom: '0.5rem',
+};
+
+const resumeCourseTitleStyle = {
+  fontSize: '1.6rem',
+  fontWeight: '800',
+  color: '#ffffff',
+  margin: '0 0 0.5rem 0',
+};
+
+const bannerProgressWrapperStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '1rem',
+  maxWidth: '400px',
+};
+
+const bannerProgressBarBgStyle = {
+  flex: 1,
+  height: '8px',
+  backgroundColor: '#0f172a',
+  borderRadius: '9999px',
+  overflow: 'hidden',
+};
+
+const bannerProgressBarFillStyle = {
+  height: '100%',
+  backgroundColor: '#c084fc',
+  borderRadius: '9999px',
+  transition: 'width 0.3s ease',
+};
+
+const resumeBtnStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  padding: '0.85rem 1.75rem',
+  backgroundColor: '#9333ea',
+  color: '#ffffff',
+  textDecoration: 'none',
+  fontWeight: 'bold',
+  borderRadius: '0.5rem',
+  fontSize: '0.95rem',
+  boxShadow: '0 4px 14px rgba(147, 51, 234, 0.4)',
+};
+
+const statsGridStyle = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+  gap: '1.25rem',
+  marginBottom: '3rem',
+};
+
+const statCardStyle = {
+  backgroundColor: '#131b4d',
+  borderRadius: '0.75rem',
+  padding: '1.25rem',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '1rem',
+  border: '1px solid #1e295d',
+};
+
+const statNumberStyle = {
+  fontSize: '1.5rem',
+  fontWeight: 'bold',
+  margin: 0,
+  color: '#ffffff',
+};
+
+const statLabelStyle = {
+  fontSize: '0.85rem',
+  color: '#94a3b8',
+  margin: 0,
+};
+
+const sectionHeadingStyle = {
+  fontSize: '1.4rem',
+  fontWeight: 'bold',
+  color: '#ffffff',
+  marginBottom: '1.25rem',
+};
+
+const courseGridStyle = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+  gap: '1.5rem',
+};
+
+const courseCardStyle = {
+  backgroundColor: '#131b4d',
+  borderRadius: '0.85rem',
+  overflow: 'hidden',
+  border: '1px solid #1e295d',
+  display: 'flex',
+  flexDirection: 'column',
+};
+
+const thumbnailWrapperStyle = {
+  height: '160px',
+  backgroundColor: '#1e295d',
+};
+
+const courseTitleStyle = {
+  fontSize: '1.1rem',
+  fontWeight: 'bold',
+  color: '#ffffff',
+  margin: '0 0 0.25rem 0',
+};
+
+const courseCategoryStyle = {
+  fontSize: '0.8rem',
+  color: '#94a3b8',
+  margin: 0,
+};
+
+const progressLabelRowStyle = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  marginBottom: '0.35rem',
+};
+
+const progressBarBgStyle = {
+  width: '100%',
+  height: '6px',
+  backgroundColor: '#0B1130',
+  borderRadius: '9999px',
+  overflow: 'hidden',
+  marginBottom: '1rem',
+};
+
+const progressBarFillStyle = {
+  height: '100%',
+  backgroundColor: '#a855f7',
+  borderRadius: '9999px',
+};
+
+const cardActionBtnStyle = {
+  display: 'block',
+  textAlign: 'center',
+  padding: '0.65rem',
+  backgroundColor: '#9333ea',
+  color: '#ffffff',
+  textDecoration: 'none',
+  fontWeight: 'bold',
+  fontSize: '0.85rem',
+  borderRadius: '0.375rem',
+};
+
+const emptyStateCardStyle = {
+  backgroundColor: '#131b4d',
+  borderRadius: '1rem',
+  padding: '3.5rem 2rem',
+  textAlign: 'center',
+  border: '1px solid #1e295d',
+  marginTop: '2rem',
+};
+
+const emptyIconWrapperStyle = {
+  width: '72px',
+  height: '72px',
+  borderRadius: '50%',
+  backgroundColor: '#1e1b4b',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  margin: '0 auto 1.25rem auto',
+};
+
+const primaryBtnStyle = {
+  display: 'inline-block',
+  padding: '0.75rem 1.5rem',
+  backgroundColor: '#9333ea',
+  color: '#ffffff',
+  textDecoration: 'none',
+  fontWeight: 'bold',
+  borderRadius: '0.5rem',
+};
+
+const loadingContainerStyle = {
+  minHeight: '80vh',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: '#0B1130',
+};
+
+const spinnerStyle = {
+  width: '40px',
+  height: '40px',
+  border: '4px solid #1e295d',
+  borderTop: '4px solid #9333ea',
+  borderRadius: '50%',
+  animation: 'spin 1s linear infinite',
+};
+
+const errorMessageStyle = {
+  padding: '1rem',
+  backgroundColor: '#7f1d1d',
+  color: '#fca5a5',
+  borderRadius: '0.5rem',
+  marginBottom: '1.5rem',
+  fontSize: '0.9rem',
+};
+
+export default Dashboard;
