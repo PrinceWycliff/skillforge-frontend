@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 const AdminDashboard = () => {
+  const [adminUser, setAdminUser] = useState(null);
   const [activeTab, setActiveTab] = useState('users');
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -10,14 +11,14 @@ const AdminDashboard = () => {
     completionRate: '0.0%',
     avgScore: '94.2%'
   });
+  const [chartData, setChartData] = useState([]);
   const [users, setUsers] = useState([]);
   const [instructors, setInstructors] = useState([]);
-  const [recentCertificates, setRecentCertificates] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [message, setMessage] = useState({ type: '', text: '' });
 
-  // Modal State for New Account Creation (Admin / Instructor / Student)
+  // Account Creation Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newUser, setNewUser] = useState({
     full_name: '',
@@ -26,47 +27,54 @@ const AdminDashboard = () => {
     role: 'admin'
   });
 
-  const getAuthHeader = () => {
-    const token = localStorage.getItem('token');
-    return {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`
-    };
-  };
-
   useEffect(() => {
+    // 1. Retrieve Logged-in Admin Info from Session / LocalStorage
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        setAdminUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.error('Failed to parse admin session user');
+      }
+    }
     fetchDashboardData();
-    // Refresh user activity status every 30 seconds
+
+    // Auto refresh active state every 30 seconds
     const interval = setInterval(fetchDashboardData, 30000);
     return () => clearInterval(interval);
   }, []);
 
+  const getAuthHeader = () => ({
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${localStorage.getItem('token')}`
+  });
+
   const fetchDashboardData = async () => {
     try {
-      // 1. Fetch Analytics Overview
+      // Fetch Analytics Overview & Chart Data
       const analyticsRes = await fetch('/api/admin/analytics', { headers: getAuthHeader() });
       const analyticsData = await analyticsRes.json();
       if (analyticsData.success) {
         setStats(analyticsData.stats);
-        setRecentCertificates(analyticsData.recentCertificates || []);
+        setChartData(analyticsData.chartData || []);
       }
 
-      // 2. Fetch All Accounts Dynamically
+      // Fetch System Accounts
       const usersRes = await fetch('/api/admin/users', { headers: getAuthHeader() });
       const usersData = await usersRes.json();
       if (usersData.success) {
         setUsers(usersData.users || []);
       }
 
-      // 3. Fetch Instructor Metrics
+      // Fetch Instructors
       const instructorsRes = await fetch('/api/admin/instructors', { headers: getAuthHeader() });
       const instructorsData = await instructorsRes.json();
       if (instructorsData.success) {
         setInstructors(instructorsData.instructors || []);
       }
     } catch (err) {
-      console.error('Error fetching admin data:', err);
-      showMessage('error', 'Failed to sync with API server.');
+      console.error('Dashboard Fetch Error:', err);
+      showMessage('error', 'Failed to synchronize dashboard metrics.');
     } finally {
       setLoading(false);
     }
@@ -77,7 +85,6 @@ const AdminDashboard = () => {
     setTimeout(() => setMessage({ type: '', text: '' }), 4000);
   };
 
-  // Create New Account (Supports Admin, Instructor, Student)
   const handleCreateAccount = async (e) => {
     e.preventDefault();
     try {
@@ -94,14 +101,13 @@ const AdminDashboard = () => {
         setNewUser({ full_name: '', email: '', password: '', role: 'admin' });
         fetchDashboardData();
       } else {
-        showMessage('error', data.message || 'Failed to create user account.');
+        showMessage('error', data.message || 'Failed to create account.');
       }
     } catch (err) {
-      showMessage('error', 'Error connecting to server.');
+      showMessage('error', 'Error connecting to API server.');
     }
   };
 
-  // Toggle Account Restrict / Activate
   const handleToggleStatus = async (userId, currentStatus) => {
     const nextStatus = currentStatus === 'suspended' ? 'active' : 'suspended';
     try {
@@ -113,19 +119,18 @@ const AdminDashboard = () => {
 
       const data = await res.json();
       if (data.success) {
-        showMessage('success', `Account status set to ${nextStatus}.`);
+        showMessage('success', `Account status updated to ${nextStatus}.`);
         fetchDashboardData();
       } else {
-        showMessage('error', data.message || 'Failed to update status.');
+        showMessage('error', data.message || 'Failed to update account.');
       }
     } catch (err) {
       showMessage('error', 'Error updating account status.');
     }
   };
 
-  // Delete Account
   const handleDeleteUser = async (userId) => {
-    if (!window.confirm('Are you sure you want to remove this account?')) return;
+    if (!window.confirm('Are you sure you want to permanently delete this user account?')) return;
 
     try {
       const res = await fetch(`/api/admin/users/${userId}`, {
@@ -135,31 +140,33 @@ const AdminDashboard = () => {
 
       const data = await res.json();
       if (data.success) {
-        showMessage('success', 'Account removed successfully.');
+        showMessage('success', 'User account deleted successfully.');
         fetchDashboardData();
       } else {
-        showMessage('error', data.message || 'Failed to delete account.');
+        showMessage('error', data.message || 'Failed to delete user.');
       }
     } catch (err) {
-      showMessage('error', 'Error deleting account.');
+      showMessage('error', 'Error deleting user account.');
     }
   };
 
-  // Filter Accounts Dynamic List
   const filteredUsers = users.filter((u) => {
+    const query = searchQuery.toLowerCase();
     const matchesQuery = 
-      (u.full_name || u.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (u.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      String(u.id).includes(searchQuery);
+      (u.full_name || u.name || '').toLowerCase().includes(query) ||
+      (u.email || '').toLowerCase().includes(query) ||
+      String(u.id).includes(query);
 
     const matchesRole = roleFilter === 'ALL' || (u.role || '').toLowerCase() === roleFilter.toLowerCase();
     return matchesQuery && matchesRole;
   });
 
+  const maxChartValue = Math.max(...chartData.map((d) => Number(d.count) || 0), 10);
+
   if (loading) {
     return (
       <div style={{ padding: '4rem', textAlign: 'center', backgroundColor: '#0b0f19', color: '#38bdf8', minHeight: '100vh', fontFamily: 'sans-serif' }}>
-        <h2>Loading Control Center...</h2>
+        <h2>Loading Skillforge Control Center...</h2>
       </div>
     );
   }
@@ -167,8 +174,8 @@ const AdminDashboard = () => {
   return (
     <div style={{ backgroundColor: '#0b0f19', color: '#f3f4f6', minHeight: '100vh', padding: '2rem', fontFamily: 'sans-serif' }}>
       
-      {/* Top Navigation */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+      {/* Top Header showing Logged-In Admin Name dynamically */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', borderBottom: '1px solid #1e293b', paddingBottom: '1rem' }}>
         <div>
           <span style={{ fontSize: '0.75rem', letterSpacing: '0.05em', color: '#38bdf8', fontWeight: 'bold' }}>
             ROLE: PLATFORM ADMINISTRATOR
@@ -177,23 +184,24 @@ const AdminDashboard = () => {
             Skillforge Control Center
           </h1>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button
-            onClick={fetchDashboardData}
-            style={{ backgroundColor: '#1e293b', border: '1px solid #334155', color: '#94a3b8', padding: '0.5rem 1rem', borderRadius: '0.5rem', cursor: 'pointer' }}
-          >
-            🔄 Refresh Data
-          </button>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            style={{ backgroundColor: '#2563eb', border: 'none', color: '#ffffff', padding: '0.5rem 1rem', borderRadius: '0.5rem', fontWeight: 'bold', cursor: 'pointer' }}
-          >
-            + Create Account
-          </button>
+
+        {/* Dynamic Logged-in Admin User Identity */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ color: '#ffffff', fontWeight: 'bold', fontSize: '0.95rem' }}>
+              {adminUser?.full_name || 'Active Admin Account'}
+            </div>
+            <div style={{ color: '#64748b', fontSize: '0.8rem' }}>
+              {adminUser?.email || 'admin@skillforge.com'}
+            </div>
+          </div>
+          <div style={{ width: '42px', height: '42px', borderRadius: '50%', backgroundColor: '#2563eb', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '1.1rem', border: '2px solid #3b82f6' }}>
+            {(adminUser?.full_name || 'A').charAt(0).toUpperCase()}
+          </div>
         </div>
       </div>
 
-      {/* Notifications */}
+      {/* Notifications Banner */}
       {message.text && (
         <div style={{ padding: '0.75rem 1rem', marginBottom: '1.5rem', borderRadius: '0.5rem', backgroundColor: message.type === 'error' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)', border: message.type === 'error' ? '1px solid #ef4444' : '1px solid #10b981', color: message.type === 'error' ? '#fca5a5' : '#6ee7b7' }}>
           {message.text}
@@ -201,7 +209,7 @@ const AdminDashboard = () => {
       )}
 
       {/* Overview Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem', marginBottom: '2.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
         <div style={cardStyle}>
           <span style={cardLabelStyle}>Total Registered Accounts</span>
           <h2 style={cardValueStyle}>{stats.totalUsers}</h2>
@@ -220,7 +228,50 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Navigation Tabs */}
+      {/* Bar Chart Section: User Registration Trends */}
+      <div style={{ backgroundColor: '#111827', borderRadius: '0.75rem', padding: '1.5rem', border: '1px solid #1e293b', marginBottom: '2.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <div>
+            <h3 style={{ margin: 0, color: '#ffffff', fontSize: '1.1rem' }}>Platform Registration Growth</h3>
+            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Monthly account signups across all user roles</span>
+          </div>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            style={{ backgroundColor: '#2563eb', border: 'none', color: '#ffffff', padding: '0.5rem 1rem', borderRadius: '0.5rem', fontWeight: 'bold', cursor: 'pointer' }}
+          >
+            + Create Account
+          </button>
+        </div>
+
+        {/* Visual CSS Bar Chart */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '1.5rem', height: '180px', padding: '1rem 0', borderBottom: '1px solid #1e293b' }}>
+          {chartData.map((bar, idx) => {
+            const heightPercent = Math.round((bar.count / maxChartValue) * 100);
+            return (
+              <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
+                <span style={{ color: '#38bdf8', fontSize: '0.75rem', fontWeight: 'bold', marginBottom: '0.4rem' }}>
+                  {bar.count}
+                </span>
+                <div
+                  style={{
+                    width: '100%',
+                    maxWidth: '45px',
+                    height: `${Math.max(heightPercent, 10)}%`,
+                    backgroundColor: '#2563eb',
+                    borderRadius: '4px 4px 0 0',
+                    transition: 'height 0.3s ease'
+                  }}
+                />
+                <span style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '0.5rem' }}>
+                  {bar.month}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Tabs */}
       <div style={{ display: 'flex', gap: '2rem', borderBottom: '1px solid #1e293b', marginBottom: '1.5rem' }}>
         <button
           onClick={() => setActiveTab('users')}
@@ -234,15 +285,9 @@ const AdminDashboard = () => {
         >
           Instructors ({instructors.length})
         </button>
-        <button
-          onClick={() => setActiveTab('audit')}
-          style={activeTab === 'audit' ? activeTabStyle : inactiveTabStyle}
-        >
-          Credentials Audit
-        </button>
       </div>
 
-      {/* Tab 1: User & Admin Account Management */}
+      {/* Tab 1: User & Admin Accounts Table */}
       {activeTab === 'users' && (
         <div style={{ backgroundColor: '#111827', borderRadius: '0.75rem', padding: '1.5rem', border: '1px solid #1e293b' }}>
           
@@ -275,9 +320,9 @@ const AdminDashboard = () => {
               <tr style={{ borderBottom: '1px solid #1e293b', color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase' }}>
                 <th style={thStyle}>User Details</th>
                 <th style={thStyle}>Role</th>
-                <th style={thStyle}>Activity / Online</th>
+                <th style={thStyle}>Activity / Online Status</th>
                 <th style={thStyle}>Account Status</th>
-                <th style={{ ...thStyle, textAlign: 'right' }}>Admin Actions</th>
+                <th style={{ ...thStyle, textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -329,7 +374,7 @@ const AdminDashboard = () => {
               ) : (
                 <tr>
                   <td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>
-                    No matching accounts found.
+                    No accounts found matching search criteria.
                   </td>
                 </tr>
               )}
@@ -338,17 +383,17 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Tab 2: Instructor Statistics */}
+      {/* Tab 2: Instructors */}
       {activeTab === 'instructors' && (
         <div style={{ backgroundColor: '#111827', borderRadius: '0.75rem', padding: '1.5rem', border: '1px solid #1e293b' }}>
-          <h3 style={{ marginTop: 0, color: '#ffffff' }}>Instructor Directory & Reach</h3>
+          <h3 style={{ marginTop: 0, color: '#ffffff' }}>Instructor Directory</h3>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #1e293b', color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase' }}>
-                <th style={thStyle}>Instructor</th>
+                <th style={thStyle}>Instructor Name</th>
                 <th style={thStyle}>Email</th>
                 <th style={thStyle}>Assigned Courses</th>
-                <th style={thStyle}>Students Reached</th>
+                <th style={thStyle}>Total Students</th>
               </tr>
             </thead>
             <tbody>
@@ -364,7 +409,7 @@ const AdminDashboard = () => {
               ) : (
                 <tr>
                   <td colSpan="4" style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>
-                    No instructor accounts registered yet.
+                    No instructor accounts registered.
                   </td>
                 </tr>
               )}
@@ -373,7 +418,7 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Account Creation Modal (Admin / Instructor / Student) */}
+      {/* Account Creation Modal */}
       {isModalOpen && (
         <div style={modalOverlayStyle}>
           <div style={modalContentStyle}>
@@ -437,7 +482,7 @@ const AdminDashboard = () => {
                   type="submit"
                   style={{ backgroundColor: '#2563eb', border: 'none', color: '#ffffff', padding: '0.5rem 1rem', borderRadius: '0.375rem', fontWeight: 'bold', cursor: 'pointer' }}
                 >
-                  Create User
+                  Create Account
                 </button>
               </div>
             </form>
@@ -449,7 +494,7 @@ const AdminDashboard = () => {
   );
 };
 
-// Custom Styles matching dark theme
+// Custom Dark Styles
 const cardStyle = { backgroundColor: '#111827', padding: '1.25rem', borderRadius: '0.75rem', border: '1px solid #1e293b' };
 const cardLabelStyle = { fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 'bold' };
 const cardValueStyle = { margin: '0.5rem 0 0 0', fontSize: '1.875rem', color: '#ffffff', fontWeight: 'bold' };

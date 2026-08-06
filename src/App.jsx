@@ -15,6 +15,7 @@ import ResetPassword from './pages/ResetPassword';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import Register from './pages/Register';
+import VerifyEmail from './pages/VerifyEmail';
 
 // Inline Guard for Instructor Studio
 const InstructorRoute = ({ children }) => {
@@ -37,6 +38,7 @@ export default function App() {
           {/* Password Recovery Routes */}
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
 
           {/* Admin Routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
