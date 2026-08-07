@@ -6,44 +6,45 @@ export default function AdminLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleAdminLogin = (e) => {
+  const API_BASE = 'https://skillforge-backend-4wd6.onrender.com';
+
+  const handleAdminLogin = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
-    // Authenticate Admin
-    fetch('https://skillforge-backend-4wd6.onrender.com/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    })
-      .then(res => res.json())
-      .then(data => {
-        // Force admin payload storage for testing/admin access
-        const adminUser = {
-          fullName: 'System Administrator',
-          email: email,
-          role: 'admin'
-        };
-
-        localStorage.setItem('sf_token', data.token || 'admin_token_active');
-        localStorage.setItem('sf_user', JSON.stringify(adminUser));
-        
-        // DIRECT REDIRECT TO ADMIN DASHBOARD
-        navigate('/admin/dashboard', { replace: true });
-      })
-      .catch(() => {
-        // Fallback demo admin login for local testing
-        const adminUser = {
-          fullName: 'System Administrator',
-          email: email,
-          role: 'admin'
-        };
-        localStorage.setItem('sf_token', 'demo_admin_token');
-        localStorage.setItem('sf_user', JSON.stringify(adminUser));
-        navigate('/admin/dashboard', { replace: true });
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
       });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Invalid email or password.');
+      }
+
+      if (data.user?.role !== 'admin') {
+        throw new Error('This account does not have admin access.');
+      }
+
+      // Store under the same keys the rest of the app reads (token/user),
+      // so AdminDashboard's Authorization header actually carries a valid token.
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      navigate('/admin/dashboard', { replace: true });
+    } catch (err) {
+      console.error('Admin Login Error:', err);
+      setError(err.message || 'Failed to authenticate.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -96,9 +97,10 @@ export default function AdminLogin() {
 
           <button
             type="submit"
-            className="w-full py-3 rounded-xl bg-[#2546F0] hover:bg-[#2546F0]/90 font-bold text-white text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-[#2546F0]/30 mt-6"
+            disabled={loading}
+            className="w-full py-3 rounded-xl bg-[#2546F0] hover:bg-[#2546F0]/90 disabled:opacity-50 font-bold text-white text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-[#2546F0]/30 mt-6"
           >
-            Authenticate Admin Portal <ArrowRight className="w-4 h-4" />
+            {loading ? 'Authenticating...' : 'Authenticate Admin Portal'} <ArrowRight className="w-4 h-4" />
           </button>
         </form>
       </div>

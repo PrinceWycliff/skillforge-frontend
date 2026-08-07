@@ -25,14 +25,26 @@ export default function Login() {
     try {
       const result = await loginWithGoogle();
       const user = result.user;
-      const idToken = await user.getIdToken();
 
-      localStorage.setItem('token', idToken);
+      // Sync this Google account into our own backend and get back a
+      // JWT_SECRET-signed token, so this session works on protected routes
+      // the same way an email/password session does.
+      const syncRes = await fetch(`${API_BASE}/api/auth/google-sync`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email, name: user.displayName }),
+      });
+      const syncData = await syncRes.json().catch(() => ({}));
+
+      if (!syncRes.ok || !syncData.success) {
+        throw new Error(syncData.message || 'Failed to sync Google account.');
+      }
+
+      localStorage.setItem('token', syncData.token);
       localStorage.setItem(
         'user',
         JSON.stringify({
-          email: user.email,
-          name: user.displayName,
+          ...syncData.user,
           photo: user.photoURL,
           uid: user.uid,
         })
