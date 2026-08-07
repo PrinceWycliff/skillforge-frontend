@@ -1,19 +1,18 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://skillforge-backend.onrender.com';
-
 export default function Register() {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    role: 'student' // Defaults to student, can be toggled to admin
-  });
+  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+  const [statusMessage, setStatusMessage] = useState({ type: '', text: '' });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
   const navigate = useNavigate();
+
+  const getApiUrl = () => {
+    let envUrl = import.meta.env.VITE_API_URL || 'https://skillforge-backend-80t0.onrender.com';
+    envUrl = envUrl.trim().replace(/\/+$/, '');
+    if (envUrl.endsWith('/api')) envUrl = envUrl.replace(/\/api$/, '');
+    return envUrl;
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -22,122 +21,101 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
-    setSuccessMsg('');
-
-    // Clean base URL to prevent double /api/api pathing
-    const cleanBaseUrl = API_BASE_URL.replace(/\/api\/?$/, '');
+    setStatusMessage({ type: '', text: '' });
 
     try {
-      const response = await fetch(`${cleanBaseUrl}/api/auth/register`, {
+      const baseUrl = getApiUrl();
+      const res = await fetch(`${baseUrl}/api/auth/register`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password
+        }),
       });
 
-      const data = await response.json();
+      const data = await res.json();
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed.');
+      if (!res.ok) {
+        throw new Error(data.message || 'Registration failed. Please check your credentials.');
       }
 
-      setSuccessMsg(data.message || 'Account created successfully! Please check your email to verify.');
-      
-      // Redirect to login after 3 seconds
-      setTimeout(() => {
-        navigate('/login');
-      }, 3000);
+      setStatusMessage({
+        type: 'success',
+        text: 'Account created successfully! Check your email inbox to verify your account.'
+      });
 
+      setTimeout(() => navigate('/login'), 3500);
     } catch (err) {
-      setError(err.message);
+      setStatusMessage({ type: 'error', text: err.message });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white px-4">
-      <div className="max-w-md w-full bg-slate-800 p-8 rounded-xl shadow-lg border border-slate-700">
-        <h2 className="text-3xl font-bold text-center mb-2">Create Account</h2>
-        <p className="text-slate-400 text-center text-sm mb-6">Join Skillforge to get started</p>
+    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-gray-800 rounded-xl p-8 shadow-2xl border border-gray-700">
+        <h2 className="text-3xl font-bold text-center text-blue-500 mb-2">Join Skillforge</h2>
+        <p className="text-gray-400 text-center mb-6 text-sm">Create your student account to start learning</p>
 
-        {error && (
-          <div className="bg-red-500/10 border border-red-500 text-red-400 p-3 rounded-lg mb-4 text-sm">
-            {error}
-          </div>
-        )}
-
-        {successMsg && (
-          <div className="bg-emerald-500/10 border border-emerald-500 text-emerald-400 p-3 rounded-lg mb-4 text-sm">
-            {successMsg}
+        {statusMessage.text && (
+          <div className={`p-4 rounded-lg mb-6 text-sm ${statusMessage.type === 'success' ? 'bg-green-900/50 text-green-300 border border-green-500' : 'bg-red-900/50 text-red-300 border border-red-500'}`}>
+            {statusMessage.text}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">Full Name</label>
+            <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">Full Name</label>
             <input
               type="text"
               name="name"
               required
               value={formData.name}
               onChange={handleChange}
+              className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
               placeholder="John Doe"
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">Email Address</label>
+            <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">Email Address</label>
             <input
               type="email"
               name="email"
               required
               value={formData.email}
               onChange={handleChange}
+              className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
               placeholder="you@example.com"
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">Password</label>
+            <label className="block text-xs font-semibold uppercase text-gray-400 mb-1">Password</label>
             <input
               type="password"
               name="password"
               required
               value={formData.password}
               onChange={handleChange}
+              className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
               placeholder="••••••••"
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500"
             />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">Account Role</label>
-            <select
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500"
-            >
-              <option value="student">Student</option>
-              <option value="admin">Administrator</option>
-            </select>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition duration-200 mt-2 disabled:opacity-50"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition duration-200 disabled:opacity-50 mt-4"
           >
-            {loading ? 'Registering...' : 'Sign Up'}
+            {loading ? 'Creating Account...' : 'Create Account'}
           </button>
         </form>
 
-        <p className="text-center text-slate-400 text-sm mt-6">
+        <p className="mt-6 text-center text-sm text-gray-400">
           Already have an account?{' '}
           <Link to="/login" className="text-blue-400 hover:underline">
             Log In
