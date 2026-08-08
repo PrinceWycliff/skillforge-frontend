@@ -8,7 +8,7 @@ export default function Register() {
   const navigate = useNavigate();
 
   const getApiUrl = () => {
-    let envUrl = import.meta.env.VITE_API_URL || 'https://skillforge-backend-80t0.onrender.com';
+    let envUrl = import.meta.env.VITE_API_URL || 'https://skillforge-backend-4wd6.onrender.com';
     envUrl = envUrl.trim().replace(/\/+$/, '');
     if (envUrl.endsWith('/api')) envUrl = envUrl.replace(/\/api$/, '');
     return envUrl;

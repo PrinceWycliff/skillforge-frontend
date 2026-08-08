@@ -9,7 +9,7 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
 
   const getApiUrl = () => {
-    let envUrl = import.meta.env.VITE_API_URL || 'https://skillforge-backend-80t0.onrender.com';
+    let envUrl = import.meta.env.VITE_API_URL || 'https://skillforge-backend-4wd6.onrender.com';
     envUrl = envUrl.trim().replace(/\/+$/, '');
     if (envUrl.endsWith('/api')) envUrl = envUrl.replace(/\/api$/, '');
     return envUrl;
@@ -115,7 +115,6 @@ export default function AdminDashboard() {
           </button>
         </header>
 
-        {/* Dynamic Analytics Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
           <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
             <p className="text-gray-400 text-xs font-semibold uppercase">Total Registered Users</p>
@@ -131,7 +130,6 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Dynamic User List Table */}
         <section className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
           <div className="p-6 border-b border-gray-700">
             <h2 className="text-xl font-bold">System Users</h2>

@@ -9,7 +9,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   const getApiUrl = () => {
-    let envUrl = import.meta.env.VITE_API_URL || 'https://skillforge-backend-80t0.onrender.com';
+    let envUrl = import.meta.env.VITE_API_URL || 'https://skillforge-backend-4wd6.onrender.com';
     envUrl = envUrl.trim().replace(/\/+$/, '');
     if (envUrl.endsWith('/api')) envUrl = envUrl.replace(/\/api$/, '');
     return envUrl;
@@ -93,7 +93,7 @@ export default function Dashboard() {
           {enrolledCourses.length === 0 ? (
             <div className="bg-gray-800 rounded-xl p-8 text-center border border-gray-700">
               <p className="text-gray-400 mb-4">You have not enrolled in any courses yet.</p>
-              <Link to="/courses" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-semibold inline-block transition">
+              <Link to="/catalog" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-semibold inline-block transition">
                 Browse Courses
               </Link>
             </div>
