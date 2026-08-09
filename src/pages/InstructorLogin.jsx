@@ -37,6 +37,10 @@ export default function InstructorLogin() {
         throw new Error(data.message || 'Invalid login credentials.');
       }
 
+      if (data.user?.role !== 'instructor' && data.user?.role !== 'admin') {
+        throw new Error('This account does not have instructor access. Ask an admin to promote your role.');
+      }
+
       // Store authentic JWT token and user profile returned from PostgreSQL
       if (data.token) {
         localStorage.setItem('token', data.token);
