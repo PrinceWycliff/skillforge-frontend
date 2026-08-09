@@ -25,6 +25,9 @@ export default function Player() {
   const [quizScore, setQuizScore] = useState(null);
   const CERTIFICATE_PASS_SCORE = 85;
 
+  // --- Progress persistence ---
+  const hasHydratedRef = useRef(false);
+
   const RAW_API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://skillforge-backend-4wd6.onrender.com';
   const API_BASE = RAW_API_BASE.replace(/\/$/, '');
 
@@ -155,6 +158,76 @@ export default function Player() {
     }
   }, [courseId, API_BASE]);
 
+  // Restore saved progress once the course has loaded, and auto-enroll if this is a first visit
+  useEffect(() => {
+    const restoreProgress = async () => {
+      const token = localStorage.getItem('token');
+      if (!token || !courseId) {
+        hasHydratedRef.current = true;
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/users/me`, {
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json().catch(() => ({}));
+
+        const match = (data.enrolledCourses || []).find((c) => String(c.id) === String(courseId));
+
+        if (match) {
+          let restoredCompleted = [];
+          try {
+            restoredCompleted = Array.isArray(match.completed_lessons)
+              ? match.completed_lessons
+              : JSON.parse(match.completed_lessons || '[]');
+          } catch (e) {
+            restoredCompleted = [];
+          }
+          setCompletedLessons(restoredCompleted);
+
+          if (match.quiz_score !== null && match.quiz_score !== undefined) {
+            setQuizScore(match.quiz_score);
+            setQuizSubmitted(true);
+          }
+        } else {
+          // Not enrolled yet — enroll now so progress has somewhere to save
+          fetch(`${API_BASE}/api/enrollments`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ courseId }),
+          }).catch(() => {});
+        }
+      } catch (err) {
+        console.error('Error restoring progress:', err);
+      } finally {
+        hasHydratedRef.current = true;
+      }
+    };
+
+    if (course) restoreProgress();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [course]);
+
+  // Save progress whenever completed lessons or quiz score change (skip the initial hydration itself)
+  useEffect(() => {
+    if (!hasHydratedRef.current || !course) return;
+
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    fetch(`${API_BASE}/api/enrollments/${courseId}/progress`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        completedLessonIds: completedLessons,
+        progress: lessons.length > 0 ? Math.round((completedLessons.length / lessons.length) * 100) : 0,
+        quizScore: quizScore,
+      }),
+    }).catch((err) => console.error('Error saving progress:', err));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [completedLessons, quizScore]);
+
   // Load the YouTube IFrame API script once
   useEffect(() => {
     if (window.YT && window.YT.Player) return;
@@ -226,7 +299,7 @@ export default function Player() {
       if (pollRef.current) clearInterval(pollRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeLesson]);
+  }, [activeLesson, completedLessons]);
 
   const toggleComplete = (id) => {
     if (!videoUnlocked && !completedLessons.includes(id)) return; // guard against bypass
