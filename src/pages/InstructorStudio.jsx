@@ -21,10 +21,16 @@ export default function InstructorStudio() {
     description: '',
   });
 
-  // Lessons State
+  // Lessons State — each lesson now optionally carries a `slideshow` object
+  // ({slides, audioUrl, manifest}) generated from a PDF upload, alongside the
+  // existing videoUrl field. Player.jsx picks whichever is present.
   const [lessons, setLessons] = useState([
-    { title: 'Course Overview & Setup', videoUrl: '' }
+    { title: 'Course Overview & Setup', videoUrl: '', contentType: 'video', slideshow: null }
   ]);
+
+  // Per-lesson PDF generation state (keyed by lesson index)
+  const [pdfProcessing, setPdfProcessing] = useState({});
+  const [pdfErrors, setPdfErrors] = useState({});
 
   // Quiz Questions State
   const [quizQuestions, setQuizQuestions] = useState([
@@ -67,7 +73,7 @@ export default function InstructorStudio() {
 
   // Add / Remove / Edit Lessons
   const addLesson = () => {
-    setLessons([...lessons, { title: '', videoUrl: '' }]);
+    setLessons([...lessons, { title: '', videoUrl: '', contentType: 'video', slideshow: null }]);
   };
 
   const removeLesson = (index) => {
@@ -78,6 +84,58 @@ export default function InstructorStudio() {
   const handleLessonChange = (index, field, value) => {
     const updated = [...lessons];
     updated[index][field] = value;
+    setLessons(updated);
+  };
+
+  const setLessonContentType = (index, type) => {
+    const updated = [...lessons];
+    updated[index].contentType = type;
+    setLessons(updated);
+  };
+
+  const handlePdfUpload = async (index, file) => {
+    if (!file) return;
+    if (file.type !== 'application/pdf') {
+      setPdfErrors((prev) => ({ ...prev, [index]: 'Please select a PDF file.' }));
+      return;
+    }
+
+    setPdfErrors((prev) => ({ ...prev, [index]: '' }));
+    setPdfProcessing((prev) => ({ ...prev, [index]: true }));
+
+    try {
+      const formData = new FormData();
+      formData.append('pdf', file);
+
+      const res = await fetch(`${API_BASE}/api/instructor/generate-lesson`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Failed to generate lesson from PDF.');
+      }
+
+      const updated = [...lessons];
+      updated[index].slideshow = {
+        slides: data.slides,
+        audioUrl: data.audioUrl,
+        manifest: data.manifest,
+      };
+      setLessons(updated);
+    } catch (err) {
+      console.error('PDF Generation Error:', err);
+      setPdfErrors((prev) => ({ ...prev, [index]: err.message || 'Failed to process PDF.' }));
+    } finally {
+      setPdfProcessing((prev) => ({ ...prev, [index]: false }));
+    }
+  };
+
+  const clearPdfSlideshow = (index) => {
+    const updated = [...lessons];
+    updated[index].slideshow = null;
     setLessons(updated);
   };
 
@@ -149,7 +207,7 @@ export default function InstructorStudio() {
           category: 'Web Development',
           description: '',
         });
-        setLessons([{ title: 'Course Overview & Setup', videoUrl: '' }]);
+        setLessons([{ title: 'Course Overview & Setup', videoUrl: '', contentType: 'video', slideshow: null }]);
         setQuizQuestions([
           { question: '', options: ['', '', '', ''], correctAnswer: 0 }
         ]);
@@ -255,7 +313,7 @@ export default function InstructorStudio() {
             color: '#fff',
           }}
         >
-          2. Video Lessons ({lessons.length})
+          2. Lessons ({lessons.length})
         </button>
         <button
           onClick={() => setActiveTab(3)}
@@ -345,7 +403,7 @@ export default function InstructorStudio() {
             onClick={() => setActiveTab(2)}
             style={{ padding: '0.6rem 1.2rem', backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
           >
-            Next: Add Video Lessons →
+            Next: Add Lessons →
           </button>
         </div>
       )}
@@ -354,7 +412,7 @@ export default function InstructorStudio() {
       {activeTab === 2 && (
         <div style={{ backgroundColor: '#1e293b', padding: '1.5rem', borderRadius: '8px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h3>Video Lessons</h3>
+            <h3>Lessons</h3>
             <button
               onClick={addLesson}
               style={{ padding: '0.4rem 0.8rem', backgroundColor: '#16a34a', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
@@ -380,15 +438,91 @@ export default function InstructorStudio() {
                 value={lesson.title}
                 onChange={(e) => handleLessonChange(idx, 'title', e.target.value)}
                 placeholder="Lesson title..."
-                style={{ width: '100%', padding: '0.5rem', marginBottom: '0.5rem', borderRadius: '4px', border: '1px solid #334155', backgroundColor: '#1e293b', color: '#fff' }}
+                style={{ width: '100%', padding: '0.5rem', marginBottom: '0.75rem', borderRadius: '4px', border: '1px solid #334155', backgroundColor: '#1e293b', color: '#fff' }}
               />
-              <input
-                type="text"
-                value={lesson.videoUrl}
-                onChange={(e) => handleLessonChange(idx, 'videoUrl', e.target.value)}
-                placeholder="Video embed link (e.g. https://www.youtube.com/embed/...)"
-                style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #334155', backgroundColor: '#1e293b', color: '#fff' }}
-              />
+
+              {/* Content type toggle */}
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setLessonContentType(idx, 'video')}
+                  style={{
+                    flex: 1,
+                    padding: '0.5rem',
+                    borderRadius: '4px',
+                    border: '1px solid #334155',
+                    cursor: 'pointer',
+                    backgroundColor: (lesson.contentType || 'video') === 'video' ? '#2563eb' : '#1e293b',
+                    color: '#fff',
+                    fontSize: '0.85rem',
+                  }}
+                >
+                  🎥 Video URL
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLessonContentType(idx, 'pdf')}
+                  style={{
+                    flex: 1,
+                    padding: '0.5rem',
+                    borderRadius: '4px',
+                    border: '1px solid #334155',
+                    cursor: 'pointer',
+                    backgroundColor: lesson.contentType === 'pdf' ? '#2563eb' : '#1e293b',
+                    color: '#fff',
+                    fontSize: '0.85rem',
+                  }}
+                >
+                  📄 Upload PDF
+                </button>
+              </div>
+
+              {(lesson.contentType || 'video') === 'video' ? (
+                <input
+                  type="text"
+                  value={lesson.videoUrl}
+                  onChange={(e) => handleLessonChange(idx, 'videoUrl', e.target.value)}
+                  placeholder="Video embed link (e.g. https://www.youtube.com/embed/...)"
+                  style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #334155', backgroundColor: '#1e293b', color: '#fff' }}
+                />
+              ) : (
+                <div>
+                  {!lesson.slideshow ? (
+                    <>
+                      <input
+                        type="file"
+                        accept="application/pdf"
+                        disabled={!!pdfProcessing[idx]}
+                        onChange={(e) => handlePdfUpload(idx, e.target.files?.[0])}
+                        style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #334155', backgroundColor: '#1e293b', color: '#fff', fontSize: '0.85rem' }}
+                      />
+                      {pdfProcessing[idx] && (
+                        <p style={{ color: '#94a3b8', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                          ⏳ Generating narrated slideshow... this can take a minute or two depending on page count.
+                        </p>
+                      )}
+                      {pdfErrors[idx] && (
+                        <p style={{ color: '#f87171', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                          {pdfErrors[idx]}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#15803d', padding: '0.6rem 0.9rem', borderRadius: '4px' }}>
+                      <span style={{ fontSize: '0.85rem' }}>
+                        ✅ {lesson.slideshow.slides.length} slides generated
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => clearPdfSlideshow(idx)}
+                        style={{ background: 'none', border: 'none', color: '#fff', textDecoration: 'underline', cursor: 'pointer', fontSize: '0.8rem' }}
+                      >
+                        Replace
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ))}
           <button

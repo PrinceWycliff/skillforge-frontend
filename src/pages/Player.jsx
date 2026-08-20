@@ -46,6 +46,10 @@ export default function Player() {
   };
 
   const isYouTubeLesson = (lesson) => !!lesson?.embedUrl?.includes('youtube.com/embed/');
+  const isSlideshowLesson = (lesson) => !!lesson?.slideshow;
+
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const audioRef = useRef(null);
 
   const extractYouTubeId = (embedUrl) => {
     const match = embedUrl?.match(/embed\/([a-zA-Z0-9_-]+)/);
@@ -124,6 +128,7 @@ export default function Player() {
             title: item.title || `Lesson ${idx + 1}`,
             embedUrl: formatEmbedUrl(item.videoUrl || item.embedUrl),
             duration: item.duration || '10:00',
+            slideshow: item.slideshow || null,
           }));
         } else if (Array.isArray(data.modules) && data.modules.length > 0) {
           loadedLessons = data.modules.map((item, idx) => ({
@@ -131,6 +136,7 @@ export default function Player() {
             title: item.title || `Module ${idx + 1}`,
             embedUrl: formatEmbedUrl(item.videoUrl || item.embedUrl),
             duration: item.duration || '10:00',
+            slideshow: item.slideshow || null,
           }));
         } else {
           loadedLessons = [
@@ -139,6 +145,7 @@ export default function Player() {
               title: data.title ? `Overview: ${data.title}` : `Module 1: Intro`,
               embedUrl: formatEmbedUrl(data.videoUrl || data.embedUrl),
               duration: data.duration || '10:00',
+              slideshow: null,
             },
           ];
         }
@@ -250,6 +257,13 @@ export default function Player() {
     }
 
     setWatchedPercent(0);
+    setCurrentSlideIndex(0);
+
+    if (isSlideshowLesson(activeLesson)) {
+      // Gating handled by the <audio> element's onTimeUpdate handler in the render below
+      setVideoUnlocked(false);
+      return;
+    }
 
     if (!isYouTubeLesson(activeLesson)) {
       // Can't measure watch-time on non-YouTube embeds — don't block these students
@@ -413,7 +427,37 @@ export default function Player() {
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-6 p-6 max-w-7xl w-full mx-auto">
         <div className="lg:col-span-3 flex flex-col">
           <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-gray-800">
-            {isYouTubeLesson(activeLesson) ? (
+            {isSlideshowLesson(activeLesson) ? (
+              <div className="w-full h-full flex flex-col bg-[#0B1130]">
+                <div className="flex-1 flex items-center justify-center overflow-hidden">
+                  <img
+                    src={activeLesson.slideshow.slides[currentSlideIndex]?.imageUrl}
+                    alt={`Slide ${currentSlideIndex + 1}`}
+                    className="max-w-full max-h-full object-contain"
+                  />
+                </div>
+                <audio
+                  ref={audioRef}
+                  src={activeLesson.slideshow.audioUrl}
+                  controls
+                  className="w-full"
+                  onTimeUpdate={(e) => {
+                    const current = e.target.currentTime;
+                    const duration = e.target.duration;
+                    if (duration > 0) {
+                      const pct = Math.min(100, Math.round((current / duration) * 100));
+                      setWatchedPercent(pct);
+                      if (pct >= WATCH_THRESHOLD) setVideoUnlocked(true);
+                    }
+                    const manifest = activeLesson.slideshow.manifest || [];
+                    const match = manifest.find((m) => current >= m.start && current < m.end);
+                    if (match && match.slideIndex !== currentSlideIndex) {
+                      setCurrentSlideIndex(match.slideIndex);
+                    }
+                  }}
+                />
+              </div>
+            ) : isYouTubeLesson(activeLesson) ? (
               <div ref={playerContainerRef} className="w-full h-full" />
             ) : (
               <iframe
@@ -446,7 +490,7 @@ export default function Player() {
                   ? 'Mark as Complete'
                   : `Watch ${WATCH_THRESHOLD}% to Unlock`}
               </button>
-              {isYouTubeLesson(activeLesson) && !completedLessons.includes(activeLesson.id) && (
+              {(isYouTubeLesson(activeLesson) || isSlideshowLesson(activeLesson)) && !completedLessons.includes(activeLesson.id) && (
                 <span className="text-[10px] text-gray-500">Watched: {watchedPercent}%</span>
               )}
             </div>
