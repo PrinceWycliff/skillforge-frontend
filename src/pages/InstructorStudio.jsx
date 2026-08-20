@@ -21,7 +21,9 @@ export default function InstructorStudio() {
     description: '',
   });
 
-  // Lessons State — each lesson carrying a `slideshow` object or videoUrl
+  // Lessons State — each lesson now optionally carries a `slideshow` object
+  // ({slides, audioUrl, manifest}) generated from a PDF upload, alongside the
+  // existing videoUrl field. Player.jsx picks whichever is present.
   const [lessons, setLessons] = useState([
     { title: 'Course Overview & Setup', videoUrl: '', contentType: 'video', slideshow: null }
   ]);
@@ -91,12 +93,10 @@ export default function InstructorStudio() {
     setLessons(updated);
   };
 
-  // Handle PDF Upload & Generation with Sanitized Filenames
   const handlePdfUpload = async (index, file) => {
     if (!file) return;
-
-    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-      setPdfErrors((prev) => ({ ...prev, [index]: 'Please select a valid PDF file.' }));
+    if (file.type !== 'application/pdf') {
+      setPdfErrors((prev) => ({ ...prev, [index]: 'Please select a PDF file.' }));
       return;
     }
 
@@ -104,16 +104,8 @@ export default function InstructorStudio() {
     setPdfProcessing((prev) => ({ ...prev, [index]: true }));
 
     try {
-      // Clean and sanitize the filename to prevent invalid storage bucket URL paths
-      const cleanFileName = file.name
-        .replace(/\s+/g, '_')            // Replace spaces with underscores
-        .replace(/[^a-zA-Z0-9_.-]/g, ''); // Remove special characters
-
-      // Re-create a clean File object with safe name
-      const sanitizedFile = new File([file], cleanFileName, { type: file.type || 'application/pdf' });
-
       const formData = new FormData();
-      formData.append('pdf', sanitizedFile);
+      formData.append('pdf', file);
 
       const res = await fetch(`${API_BASE}/api/instructor/generate-lesson`, {
         method: 'POST',
@@ -178,7 +170,7 @@ export default function InstructorStudio() {
     setQuizQuestions(updated);
   };
 
-  // Publish Form Handler
+  // Publish Form Handler (Strictly excludes 'thumbnail' to match PostgreSQL table schema)
   const handlePublishCourse = async (e) => {
     if (e) e.preventDefault();
     setLoading(true);
@@ -237,7 +229,7 @@ export default function InstructorStudio() {
     }
   };
 
-  // Delete Course Handler
+  // Fixed Delete Course Handler
   const handleDeleteCourse = async (courseId) => {
     if (!window.confirm('Are you sure you want to permanently delete this course?')) return;
 
