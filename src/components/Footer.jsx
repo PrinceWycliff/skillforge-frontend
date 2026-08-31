@@ -65,7 +65,7 @@ const Footer = () => {
           <ul style={listStyle}>
             <li><Link to="/help" style={linkStyle}>Help Center</Link></li>
             <li><Link to="/faq" style={linkStyle}>FAQ</Link></li>
-            <li><a href="mailto:support@skillforge.com" style={linkStyle}>Contact Us</a></li>
+            <li><Link to="/contact" style={linkStyle}>Contact Us</Link></li>
             <li><Link to="/community" style={linkStyle}>Community</Link></li>
             <li><Link to="/blog" style={linkStyle}>Blog</Link></li>
           </ul>
