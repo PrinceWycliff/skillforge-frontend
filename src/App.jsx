@@ -18,6 +18,7 @@ import AdminRoute from './components/AdminRoute';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
 import Footer from './components/Footer';
+import BecomeInstructor from './pages/BecomeInstructor';
 
 // Static Info Page Imports
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -96,6 +97,7 @@ export default function App() {
             {/* Footer Static Routes */}
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/instructor/register" element={<BecomeInstructor />} />
             <Route path="/help" element={<HelpCenter />} />
             <Route path="/community" element={<Community />} />
             <Route path="/faq" element={<FAQPage />} />
