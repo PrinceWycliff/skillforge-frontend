@@ -35,7 +35,6 @@ export default function App() {
          
           <Routes>
             {/* Public Routes */}
-            <Route path="/" element={<Scrolltotop />} />
             <Route path="/" element={<Landing />} />
             <Route path="/catalog" element={<Catalog />} />
             <Route path="/login" element={<Login />} />
