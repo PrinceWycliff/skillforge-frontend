@@ -28,6 +28,7 @@ const InstructorRoute = ({ children }) => {
 export default function App() {
   return (
     <Router>
+        <Scrolltotop />
       <div className="flex flex-col min-h-screen bg-[#0B1130] text-white">
         {/* Main Content Area expands to fill remaining vertical space */}
         <main className="flex-grow">
