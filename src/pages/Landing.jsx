@@ -37,12 +37,7 @@ export default function Landing() {
             >
               Courses
             </Link>
-            <Link
-              to="/instructor/login"
-              className="hidden sm:inline-block text-gray-300 hover:text-white text-sm font-medium transition"
-            >
-              For Instructors
-            </Link>
+           
 
             {isLoggedIn ? (
               <Link
