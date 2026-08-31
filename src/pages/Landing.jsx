@@ -109,8 +109,6 @@ export default function Landing() {
       {/* 3. POPULAR SKILL TRACKS (real course categories, not fabricated stats) */}
       <TrustedSection />
 
-      {/* 4. FOOTER */}
-      <Footer />
 
     </div>
   );
