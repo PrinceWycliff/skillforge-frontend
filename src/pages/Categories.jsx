@@ -1,11 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FaCode, FaNetworkWired, FaShieldAlt, FaDatabase, FaSystemWired } from 'react-icons/fa';
+import { FaCode, FaNetworkWired, FaShieldAlt, FaDatabase } from 'react-icons/fa';
 
 export default function Categories() {
   const categories = [
     { icon: <FaCode className="text-[#34E0D8]" size={32} />, title: "Web Development", desc: "Full-stack development, React, Node.js, HTML/CSS, and REST APIs." },
-    { icon: <FaSystemWired className="text-[#34E0D8]" size={32} />, title: "System Administration", desc: "OSI Model, Access Control Lists (ACLs), NAT configurations, and VPNs." },
     { icon: <FaNetworkWired className="text-[#34E0D8]" size={32} />, title: "Networking & Enterprise Systems", desc: "OSI Model, Access Control Lists (ACLs), NAT configurations, and VPNs." },
     { icon: <FaDatabase className="text-[#34E0D8]" size={32} />, title: "Database Engineering", desc: "Relational database design, SQL queries, indexing, and data modelling." },
     { icon: <FaShieldAlt className="text-[#34E0D8]" size={32} />, title: "Cybersecurity & Infrastructure", desc: "Network security, access management, system auditing, and threat analysis." }
