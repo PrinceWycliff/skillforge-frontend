@@ -168,9 +168,7 @@ export default function Catalog() {
             <Link to="/dashboard" style={{ color: '#94a3b8', textDecoration: 'none', transition: 'color 0.2s' }}>
               Dashboard
             </Link>
-            <Link to="/contact" style={{ color: '#94a3b8', textDecoration: 'none', transition: 'color 0.2s' }}>
-              Support
-            </Link>
+            
           </nav>
         </div>
       </header>
