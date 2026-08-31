@@ -8,6 +8,15 @@ import { useLocation } from 'react-router-dom';
 export default function ScrollToTop() {
   const { pathname } = useLocation();
 
+  // Browsers have their own automatic scroll-restoration behavior that can silently
+  // fight with a manual scrollTo() call. Disabling it hands full control to this
+  // component — this is the most common reason this exact pattern fails.
+  useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+  }, []);
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
