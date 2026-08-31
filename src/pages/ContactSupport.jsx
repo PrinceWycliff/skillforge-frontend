@@ -121,10 +121,7 @@ export default function ContactSupport() {
         </div>
       </main>
 
-      {/* Simple Footer */}
-      <footer className="border-t border-gray-800 py-6 text-center text-xs text-gray-500">
-        © {new Date().getFullYear()} Skillforge. All rights reserved.
-      </footer>
+     
     </div>
   );
 }
