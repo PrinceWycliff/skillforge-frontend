@@ -52,7 +52,7 @@ const Footer = () => {
           <h4 style={headingStyle}>Platform</h4>
           <ul style={listStyle}>
             <li><Link to="/courses" style={linkStyle}>Browse Courses</Link></li>
-            <li><Link to="/categories" style={linkStyle}>Categories</Link></li>
+            <li><Link to="/catalog" style={linkStyle}>Categories</Link></li>
             <li><Link to="/instructor/register" style={linkStyle}>Become an Instructor</Link></li>
             <li><Link to="/enterprise" style={linkStyle}>Enterprise Solutions</Link></li>
             <li><Link to="/pricing" style={linkStyle}>Pricing</Link></li>

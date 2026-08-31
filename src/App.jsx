@@ -24,6 +24,11 @@ import BecomeInstructor from './pages/BecomeInstructor';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import HelpCenter from './pages/HelpCenter';
+import Enterprise from './pages/Enterprise';
+import Pricing from './pages/Pricing';
+import Categories from './pages/Categories';
+import Blog from './pages/Blog';
+import BecomeInstructor from './pages/BecomeInstructor';
 import Community from './pages/Community';
 import FAQPage from './pages/FAQPage'; // Add FAQ Page Import
 
@@ -101,6 +106,11 @@ export default function App() {
             <Route path="/help" element={<HelpCenter />} />
             <Route path="/community" element={<Community />} />
             <Route path="/faq" element={<FAQPage />} />
+            <Route path="/enterprise" element={<Enterprise />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/categories" element={<Categories />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/instructor/register" element={<BecomeInstructor />} />
 
             {/* Fallback Catch-all Route - MUST remain at the bottom of Routes */}
             <Route path="*" element={<Navigate to="/" replace />} />
