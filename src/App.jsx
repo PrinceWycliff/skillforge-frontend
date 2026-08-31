@@ -13,6 +13,7 @@ import InstructorStudio from './pages/InstructorStudio';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import ProtectedRoute from './components/ProtectedRoute';
+import Scrolltotop from './components/Scrolltotop';
 import AdminRoute from './components/AdminRoute';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
@@ -30,8 +31,10 @@ export default function App() {
       <div className="flex flex-col min-h-screen bg-[#0B1130] text-white">
         {/* Main Content Area expands to fill remaining vertical space */}
         <main className="flex-grow">
+         
           <Routes>
             {/* Public Routes */}
+            <Route path="/" element={<Scrolltotop />} />
             <Route path="/" element={<Landing />} />
             <Route path="/catalog" element={<Catalog />} />
             <Route path="/login" element={<Login />} />
