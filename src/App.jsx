@@ -28,7 +28,6 @@ import Enterprise from './pages/Enterprise';
 import Pricing from './pages/Pricing';
 import Categories from './pages/Categories';
 import Blog from './pages/Blog';
-import BecomeInstructor from './pages/BecomeInstructor';
 import Community from './pages/Community';
 import FAQPage from './pages/FAQPage'; // Add FAQ Page Import
 
