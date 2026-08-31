@@ -110,9 +110,9 @@ const Footer = () => {
   );
 };
 
-// Layout & Theme Styles matching image palette
+// Layout & Theme Styles — harmonized to match #0B1130 / #34E0D8 brand used site-wide
 const footerStyle = {
-  backgroundColor: '#04042C',
+  backgroundColor: '#0B1130',
   color: '#94a3b8',
   paddingTop: '3.5rem',
   paddingBottom: '1.5rem',
@@ -142,7 +142,7 @@ const brandHeaderStyle = {
 };
 
 const logoBadgeStyle = {
-  backgroundColor: '#3A82F6',
+  backgroundColor: '#2546F0',
   color: '#ffffff',
   width: '38px',
   height: '38px',
@@ -174,7 +174,7 @@ const socialIconGroupStyle = {
 };
 
 const socialIconStyle = {
-  color: '#ffffff',
+  color: '#34E0D8',
   textDecoration: 'none',
   transition: 'opacity 0.2s',
   opacity: 0.9
@@ -208,9 +208,9 @@ const inputStyle = {
   width: '100%',
   padding: '0.75rem 1rem',
   borderRadius: '0.375rem',
-  border: 'none',
-  backgroundColor: '#ffffff',
-  color: '#0f172a',
+  border: '1px solid #1e293b',
+  backgroundColor: '#131b4d',
+  color: '#ffffff',
   fontSize: '0.9rem',
   marginBottom: '0.75rem',
   boxSizing: 'border-box',
@@ -222,12 +222,12 @@ const buttonStyle = {
   padding: '0.75rem 1rem',
   borderRadius: '0.375rem',
   border: 'none',
-  backgroundColor: '#18181b',
-  color: '#ffffff',
+  background: 'linear-gradient(135deg, #2546F0 0%, #34E0D8 100%)',
+  color: '#0B1130',
   fontWeight: 'bold',
   fontSize: '0.9rem',
   cursor: 'pointer',
-  transition: 'background-color 0.2s'
+  transition: 'opacity 0.2s'
 };
 
 const bottomBorderStyle = {
