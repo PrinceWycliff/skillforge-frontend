@@ -89,7 +89,7 @@ export default function ContactSupport() {
                   href="mailto:dicksonprince.wycliff@gmail.com"
                   className="text-xs font-semibold text-[#34E0D8] hover:underline break-all"
                 >
-                  dicksonprince.wycliff@gmail.com
+                  skillforgesystems@gmail.com
                 </a>
               </div>
             </div>
@@ -158,7 +158,7 @@ export default function ContactSupport() {
                   className="flex items-center gap-2 p-2.5 bg-[#0B1130] border border-[#1e293b] rounded-lg text-xs font-medium text-white hover:border-[#34E0D8] transition"
                 >
                   <FaTwitter className="text-[#34E0D8]" size={16} />
-                  <span>@Princewyclsejw</span>
+                  <span>X</span>
                 </a>
               </div>
             </div>
@@ -172,7 +172,7 @@ export default function ContactSupport() {
               <div className="flex items-center gap-2 text-[#34E0D8] font-semibold pt-2">
                 <FaMapMarkerAlt size={12} /> Support Base
               </div>
-              <p>Nchalo, Malawi</p>
+              <p>Blantyre, Malawi</p>
             </div>
 
           </div>

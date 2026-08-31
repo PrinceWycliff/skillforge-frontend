@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://skillforge-backend-4wd6.onrender.com';
 
@@ -7,6 +7,11 @@ export default function Catalog() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  // URL Query Parameter handling
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeCategory = searchParams.get('category') || 'All';
+
   const navigate = useNavigate();
 
   // Fetch Courses
@@ -39,8 +44,26 @@ export default function Catalog() {
       existingEnrollments.push(courseId);
       localStorage.setItem('enrolledCourses', JSON.stringify(existingEnrollments));
     }
-    // Fixed route destination: navigate to /player/
     navigate(`/player/${courseId}`);
+  };
+
+  // Derive unique categories from fetched courses
+  const categoriesList = ['All', ...new Set(courses.map((c) => c.category || 'Web Development'))];
+
+  // Filter courses based on active URL parameter
+  const filteredCourses = activeCategory === 'All'
+    ? courses
+    : courses.filter(
+        (course) => (course.category || 'Web Development').toLowerCase() === activeCategory.toLowerCase()
+      );
+
+  // Switch category filter in URL
+  const handleCategorySelect = (cat) => {
+    if (cat === 'All') {
+      setSearchParams({});
+    } else {
+      setSearchParams({ category: cat });
+    }
   };
 
   return (
@@ -99,9 +122,7 @@ export default function Catalog() {
             <Link to="/dashboard" style={{ color: '#cbd5e1', textDecoration: 'none' }}>
               Dashboard
             </Link>
-            <Link to="/contact" style={{ color: '#cbd5e1', textDecoration: 'none' }}>
-              Contact Support
-            </Link>
+           
           </nav>
         </div>
       </header>
@@ -109,10 +130,47 @@ export default function Catalog() {
       {/* Main Content Area */}
       <main style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
         {/* Header Title */}
-        <div style={{ marginBottom: '2rem' }}>
+        <div style={{ marginBottom: '1.5rem' }}>
           <h2 style={{ fontSize: '1.875rem', fontWeight: 'bold', margin: '0 0 0.5rem 0' }}>Course Catalog</h2>
           <p style={{ color: '#aaa', margin: 0 }}>Explore available course tracks and start learning today.</p>
         </div>
+
+        {/* Category Filter Pills Bar */}
+        {!loading && !error && courses.length > 0 && (
+          <div
+            style={{
+              display: 'flex',
+              gap: '0.5rem',
+              flexWrap: 'wrap',
+              marginBottom: '2rem',
+              paddingBottom: '0.5rem',
+              borderBottom: '1px solid #1e293b',
+            }}
+          >
+            {categoriesList.map((cat) => {
+              const isActive = activeCategory.toLowerCase() === cat.toLowerCase();
+              return (
+                <button
+                  key={cat}
+                  onClick={() => handleCategorySelect(cat)}
+                  style={{
+                    padding: '0.4rem 1rem',
+                    borderRadius: '20px',
+                    fontSize: '0.85rem',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    border: isActive ? '1px solid #3b82f6' : '1px solid #334155',
+                    backgroundColor: isActive ? '#2563eb' : '#1e293b',
+                    color: isActive ? '#ffffff' : '#cbd5e1',
+                  }}
+                >
+                  {cat}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* Loading State */}
         {loading && (
@@ -128,8 +186,8 @@ export default function Catalog() {
           </div>
         )}
 
-        {/* Course Grid */}
-        {!loading && !error && courses.length === 0 && (
+        {/* Empty / No Courses Found State */}
+        {!loading && !error && filteredCourses.length === 0 && (
           <div
             style={{
               padding: '3rem',
@@ -139,11 +197,32 @@ export default function Catalog() {
               border: '1px solid #334155',
             }}
           >
-            <p style={{ fontSize: '1.1rem', color: '#cbd5e1' }}>No published courses available yet. Check back soon!</p>
+            <p style={{ fontSize: '1.1rem', color: '#cbd5e1', marginBottom: '1rem' }}>
+              {activeCategory === 'All'
+                ? 'No published courses available yet. Check back soon!'
+                : `No courses available under the "${activeCategory}" category right now.`}
+            </p>
+            {activeCategory !== 'All' && (
+              <button
+                onClick={() => handleCategorySelect('All')}
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#3b82f6',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                }}
+              >
+                View All Courses
+              </button>
+            )}
           </div>
         )}
 
-        {!loading && !error && courses.length > 0 && (
+        {/* Course Grid */}
+        {!loading && !error && filteredCourses.length > 0 && (
           <div
             style={{
               display: 'grid',
@@ -151,7 +230,7 @@ export default function Catalog() {
               gap: '1.5rem',
             }}
           >
-            {courses.map((course) => (
+            {filteredCourses.map((course) => (
               <div
                 key={course.id}
                 style={{
