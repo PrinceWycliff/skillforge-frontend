@@ -17,7 +17,14 @@ import Scrolltotop from './components/Scrolltotop';
 import AdminRoute from './components/AdminRoute';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
-import Footer from './components/Footer'; // Import Footer
+import Footer from './components/Footer';
+
+// Static Info Page Imports
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
+import HelpCenter from './pages/HelpCenter';
+import Community from './pages/Community';
+import FAQPage from './pages/FAQPage'; // Add FAQ Page Import
 
 // Inline Guard for Instructor Studio
 const InstructorRoute = ({ children }) => {
@@ -28,15 +35,15 @@ const InstructorRoute = ({ children }) => {
 export default function App() {
   return (
     <Router>
-        <Scrolltotop />
+      <Scrolltotop />
       <div className="flex flex-col min-h-screen bg-[#0B1130] text-white">
         {/* Main Content Area expands to fill remaining vertical space */}
         <main className="flex-grow">
-         
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Landing />} />
             <Route path="/catalog" element={<Catalog />} />
+            <Route path="/courses" element={<Catalog />} /> {/* Optional alias for Footer link */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/contact" element={<ContactSupport />} />
@@ -86,7 +93,14 @@ export default function App() {
               } 
             />
 
-            {/* Fallback Catch-all Route */}
+            {/* Footer Static Routes */}
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/help" element={<HelpCenter />} />
+            <Route path="/community" element={<Community />} />
+            <Route path="/faq" element={<FAQPage />} />
+
+            {/* Fallback Catch-all Route - MUST remain at the bottom of Routes */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>

@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaFacebook, FaTwitter, FaLinkedin, FaYoutube } from 'react-icons/fa';
 
+// ==========================================
+// 1. MAIN FOOTER COMPONENT
+// ==========================================
 const Footer = () => {
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
@@ -62,30 +65,30 @@ const Footer = () => {
           <ul style={listStyle}>
             <li><Link to="/help" style={linkStyle}>Help Center</Link></li>
             <li><Link to="/faq" style={linkStyle}>FAQ</Link></li>
-            <li><Link to="/contact" style={linkStyle}>Contact Us</Link></li>
+            <li><a href="mailto:support@skillforge.com" style={linkStyle}>Contact Us</a></li>
             <li><Link to="/community" style={linkStyle}>Community</Link></li>
             <li><Link to="/blog" style={linkStyle}>Blog</Link></li>
           </ul>
         </div>
 
-                {/* Column 4: Legal & Portals */}
-            <div style={columnStyle}>
-            <h4 style={headingStyle}>Legal</h4>
-            <ul style={listStyle}>
-                <li><Link to="/terms" style={linkStyle}>Terms of Service</Link></li>
-                <li><Link to="/privacy" style={linkStyle}>Privacy Policy</Link></li>
-                {/* Internal / Staff Portals */}
-                <li><Link to="/instructor/login" style={linkStyle}>Instructor Portal</Link></li>
-                <li><Link to="/admin/login" style={linkStyle}>Admin Portal</Link></li>
-            </ul>
-            </div>
+        {/* Column 4: Legal & Portals */}
+        <div style={columnStyle}>
+          <h4 style={headingStyle}>Legal & Portals</h4>
+          <ul style={listStyle}>
+            <li><Link to="/terms" style={linkStyle}>Terms of Service</Link></li>
+            <li><Link to="/privacy" style={linkStyle}>Privacy Policy</Link></li>
+            <li><Link to="/instructor/login" style={linkStyle}>Instructor Portal</Link></li>
+            <li><Link to="/admin/login" style={linkStyle}>Admin Portal</Link></li>
+          </ul>
+        </div>
+
         {/* Column 5: Newsletter */}
         <div style={columnStyle}>
           <h4 style={headingStyle}>Newsletter</h4>
           <p style={descriptionStyle}>
             Subscribe to get updates on new courses and offers
           </p>
-          <form onSubmit={handleSubscribe} style={{ marginTop: '1rem' }}>
+          <form onSubmit={handleSubscribe} style={{ marginTop: '0.25rem' }}>
             <input
               type="email"
               placeholder="Your email"
@@ -101,7 +104,6 @@ const Footer = () => {
         </div>
 
       </div>
-     
 
       <div style={bottomBorderStyle}>
         © {new Date().getFullYear()} SkillForge. All rights reserved.
@@ -110,7 +112,74 @@ const Footer = () => {
   );
 };
 
-// Layout & Theme Styles — harmonized to match #0B1130 / #34E0D8 brand used site-wide
+// ==========================================
+// 2. REUSABLE PAGE CONTAINER & ROUTE PAGES
+// ==========================================
+const StaticPage = ({ title, children }) => (
+  <div style={{ backgroundColor: '#0B1130', minHeight: '80vh', color: '#ffffff', padding: '4rem 1.5rem', fontFamily: 'sans-serif' }}>
+    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+      <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '1.5rem', borderBottom: '1px solid #1e293b', paddingBottom: '1rem', color: '#34E0D8' }}>
+        {title}
+      </h1>
+      <div style={{ color: '#94a3b8', lineHeight: '1.7', fontSize: '0.95rem' }}>
+        {children}
+      </div>
+    </div>
+  </div>
+);
+
+export const PrivacyPolicy = () => (
+  <StaticPage title="Privacy Policy">
+    <p>At SkillForge, we respect your privacy and are committed to protecting personal data collected through our educational platform.</p>
+    <h3 style={{ color: '#fff', marginTop: '1.5rem' }}>1. Information Collected</h3>
+    <p>We collect account details (name, email) and course progress analytics to deliver course materials and certificates.</p>
+    <h3 style={{ color: '#fff', marginTop: '1.5rem' }}>2. Data Protection</h3>
+    <p>Your user data is stored securely and is never shared or sold to third parties.</p>
+  </StaticPage>
+);
+
+export const TermsOfService = () => (
+  <StaticPage title="Terms of Service">
+    <p>By accessing SkillForge, you agree to follow our code of conduct and learning integrity policies.</p>
+    <h3 style={{ color: '#fff', marginTop: '1.5rem' }}>1. Intellectual Property</h3>
+    <p>All video lectures, course code, and assessments belong exclusively to SkillForge and platform instructors.</p>
+    <h3 style={{ color: '#fff', marginTop: '1.5rem' }}>2. User Conduct</h3>
+    <p>Learners must complete assessments honestly and engage respectfully in community forums.</p>
+  </StaticPage>
+);
+
+export const HelpCenter = () => (
+  <StaticPage title="Help Center & Support">
+    <p>Having trouble accessing a course or account setting?</p>
+    <div style={{ backgroundColor: '#131b4d', padding: '1.25rem', borderRadius: '8px', margin: '1.5rem 0', border: '1px solid #1e293b' }}>
+      <h4 style={{ color: '#ffffff', margin: '0 0 0.5rem 0' }}>Technical Support</h4>
+      <p style={{ margin: 0 }}>Reach out directly via email at <a href="mailto:support@skillforge.com" style={{ color: '#34E0D8' }}>support@skillforge.com</a>.</p>
+    </div>
+  </StaticPage>
+);
+
+export const CommunityPage = () => (
+  <StaticPage title="SkillForge Community">
+    <p>Connect with other tech learners and instructors across our community networks.</p>
+    <ul style={{ lineHeight: '2' }}>
+      <li><strong>GitHub:</strong> Access open-source course repositories and student code reviews.</li>
+      <li><strong>Discord:</strong> Join real-time discussions on Web Development, Networking, and Systems Administration.</li>
+    </ul>
+  </StaticPage>
+);
+
+export const FAQPage = () => (
+  <StaticPage title="Frequently Asked Questions">
+    <h3 style={{ color: '#fff' }}>How long do I have access to enrolled courses?</h3>
+    <p>You enjoy full lifetime access to all purchased course lectures and resources.</p>
+    <h3 style={{ color: '#fff', marginTop: '1.5rem' }}>Are certificates provided?</h3>
+    <p>Yes! Verified certificates of completion are automatically generated upon finishing all required modules.</p>
+  </StaticPage>
+);
+
+// ==========================================
+// 3. STYLES
+// ==========================================
 const footerStyle = {
   backgroundColor: '#0B1130',
   color: '#94a3b8',
@@ -125,8 +194,8 @@ const containerStyle = {
   margin: '0 auto',
   padding: '0 1.5rem',
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-  gap: '2.5rem'
+  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+  gap: '2rem'
 };
 
 const columnStyle = {
