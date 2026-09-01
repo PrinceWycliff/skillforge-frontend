@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import Sidebar from '../components/Sidebar';
 
 export default function Player() {
   const { courseId } = useParams();
@@ -372,10 +373,13 @@ export default function Player() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0B1130] text-white flex items-center justify-center font-sans">
-        <div className="text-center">
-          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-sm text-gray-400">Loading Course Player...</p>
+      <div className="flex min-h-screen bg-[#0B1130]">
+        <Sidebar role="student" />
+        <div className="flex-1 text-white flex items-center justify-center font-sans">
+          <div className="text-center">
+            <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-sm text-gray-400">Loading Course Player...</p>
+          </div>
         </div>
       </div>
     );
@@ -383,23 +387,28 @@ export default function Player() {
 
   if (error || !activeLesson) {
     return (
-      <div className="min-h-screen bg-[#0B1130] text-white flex items-center justify-center font-sans p-4">
-        <div className="max-w-md w-full bg-[#111936] p-6 rounded-xl border border-gray-800 text-center shadow-xl">
-          <h2 className="text-lg font-bold text-red-400 mb-2">Error Loading Course</h2>
-          <p className="text-xs text-gray-400 mb-6">{error || 'Course content could not be loaded.'}</p>
-          <Link
-            to="/catalog"
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold transition"
-          >
-            Back to Catalog
-          </Link>
+      <div className="flex min-h-screen bg-[#0B1130]">
+        <Sidebar role="student" />
+        <div className="flex-1 text-white flex items-center justify-center font-sans p-4">
+          <div className="max-w-md w-full bg-[#111936] p-6 rounded-xl border border-gray-800 text-center shadow-xl">
+            <h2 className="text-lg font-bold text-red-400 mb-2">Error Loading Course</h2>
+            <p className="text-xs text-gray-400 mb-6">{error || 'Course content could not be loaded.'}</p>
+            <Link
+              to="/catalog"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold transition"
+            >
+              Back to Catalog
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0B1130] text-white flex flex-col font-sans">
+    <div className="flex min-h-screen bg-[#0B1130]">
+      <Sidebar role="student" />
+      <div className="flex-1 text-white flex flex-col font-sans">
       <header className="border-b border-gray-800 bg-[#0B1130]/90 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link
@@ -643,6 +652,7 @@ export default function Player() {
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

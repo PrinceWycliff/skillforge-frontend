@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Sidebar from '../components/Sidebar';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://skillforge-backend-4wd6.onrender.com';
 
@@ -262,29 +263,15 @@ export default function InstructorStudio() {
   };
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '1000px', margin: '0 auto', color: '#fff' }}>
-      {/* Header and Logout */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <h2>Instructor Studio</h2>
-          <p style={{ color: '#aaa', margin: 0 }}>
-            Create structured courses, video lessons, and interactive assessments.
-          </p>
-        </div>
-        <button
-          onClick={handleLogout}
-          style={{
-            padding: '0.5rem 1rem',
-            backgroundColor: '#334155',
-            color: '#cbd5e1',
-            border: '1px solid #475569',
-            borderRadius: '6px',
-            fontSize: '0.85rem',
-            cursor: 'pointer',
-          }}
-        >
-          🔒 Logout Studio
-        </button>
+    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#0B1130' }}>
+      <Sidebar role="instructor" />
+      <div style={{ flex: 1, padding: '2rem', maxWidth: '1000px', margin: '0 auto', color: '#fff' }}>
+      {/* Header */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        <h2>Instructor Studio</h2>
+        <p style={{ color: '#aaa', margin: 0 }}>
+          Create structured courses, video lessons, and interactive assessments.
+        </p>
       </div>
 
       {/* Navigation Tabs */}
@@ -667,6 +654,7 @@ export default function InstructorStudio() {
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }
