@@ -1,5 +1,6 @@
 import React from 'react';
 import StaticPage from './StaticPage';
+import Sidebar from '../components/Sidebar';
 
 export default function TermsOfService() {
   return (

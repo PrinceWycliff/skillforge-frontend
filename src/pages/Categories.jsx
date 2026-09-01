@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { FaCode, FaNetworkWired, FaShieldAlt, FaDatabase, FaServer } from 'react-icons/fa';
+import Sidebar from '../components/Sidebar';
 
 export default function Categories() {
   const categories = [

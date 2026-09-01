@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import StaticPage from './StaticPage';
+import Sidebar from '../components/Sidebar';
 import { Link } from 'react-router-dom';
 import { 
   FaSearch, 
