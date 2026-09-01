@@ -8,6 +8,7 @@ const NAV_CONFIG = {
   student: [
     { label: 'Dashboard', path: '/dashboard', icon: FaHome },
     { label: 'Browse Catalog', path: '/catalog', icon: FaBook },
+  
   ],
   instructor: [
     { label: 'Instructor Studio', path: '/instructor/studio', icon: FaChalkboardTeacher },

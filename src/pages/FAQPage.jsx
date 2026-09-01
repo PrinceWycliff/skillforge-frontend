@@ -185,7 +185,12 @@ export default function FAQPage() {
             Contact Support
           </Link>
         </div>
-
+            {/* Footer Link */}
+                  <div className="mt-8 pt-6 border-t border-gray-800 text-center text-xs text-gray-500">
+                    <Link to="/" className="hover:text-gray-300 transition">
+                      ← Return to Main Homepage
+                    </Link>
+                  </div>
       </div>
     </div>
   );
