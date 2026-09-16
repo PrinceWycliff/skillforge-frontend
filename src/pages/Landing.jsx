@@ -29,7 +29,10 @@ export default function Landing() {
             </span>
           </Link>
 
-          <nav onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="hidden md:flex items-center gap-8">
+          <nav
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className={`${isMobileMenuOpen ? "flex" : "hidden"} md:flex items-center gap-8`}
+            >
             <Link to="/catalog" className="text-[#2546F0] font-semibold text-sm">Courses</Link>
             <Link to="/paths" className="text-gray-600 hover:text-[#0B1130] text-sm font-medium transition">Paths</Link>
             <Link to="/for-business" className="text-gray-600 hover:text-[#0B1130] text-sm font-medium transition">For Business</Link>
