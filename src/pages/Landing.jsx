@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { FaBolt, FaPlay } from 'react-icons/fa';
 import TrustedSection from '../components/TrustedSection';
 import Footer from '../components/Footer';
-import Pricing from './Pricing';
+
 
 export default function Landing() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -34,7 +34,7 @@ export default function Landing() {
             <Link to="/paths" className="text-gray-600 hover:text-[#0B1130] text-sm font-medium transition">Paths</Link>
             <Link to="/for-business" className="text-gray-600 hover:text-[#0B1130] text-sm font-medium transition">For Business</Link>
             <Link to="/certificates" className="text-gray-600 hover:text-[#0B1130] text-sm font-medium transition">Certificates</Link>
-            <Link to="/pricing" className="text-gray-600 hover:text-[#0B1130] text-sm font-medium transition">Pricing</Link>
+            <Link to="/pricing" className="text-[#2546F0] font-semibold text-sm">Pricing</Link>
           </nav>
 
           <div className="flex items-center gap-5">

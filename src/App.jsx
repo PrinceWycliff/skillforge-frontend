@@ -57,7 +57,7 @@ export default function App() {
             <Route path="/paths" element={<ComingSoon title="Learning Paths" description="Curated multi-course paths are on the way — we're building this right now." />} />
             <Route path="/for-business" element={<ComingSoon title="Skillforge for Business" description="Team plans and enterprise features are coming soon." />} />
             <Route path="/certificates" element={<ComingSoon title="Certificate Verification" description="A public certificate verification page is coming soon." />} />
-            <Route path="/pricing" element={<ComingSoon title="Pricing" description="Skillforge is free to use right now — paid plans are being designed." />} />
+           <Route path="/pricing" element={<Pricing />} />
             
             {/* Password Recovery Routes */}
             <Route path="/forgot-password" element={<ForgotPassword />} />
