@@ -23,10 +23,7 @@ export default {
         serif: ['"Cormorant Garamond"', 'serif'],
         sans: ['"DM Sans"', 'sans-serif'],
       },
-            fontFamily: {
-        display: ['Manrope', 'sans-serif'],
-        body: ['Inter', 'sans-serif'],
-      },
+   
       borderRadius: {
         'soft': '18px',
       },
