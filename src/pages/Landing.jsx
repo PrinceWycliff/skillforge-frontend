@@ -7,6 +7,7 @@ import Footer from '../components/Footer';
 
 export default function Landing() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const user = localStorage.getItem('user');
