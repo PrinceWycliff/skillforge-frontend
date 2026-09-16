@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { FaBolt, FaPlay } from 'react-icons/fa';
 import TrustedSection from '../components/TrustedSection';
 import Footer from '../components/Footer';
+import Pricing from './Pricing';
 
 export default function Landing() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
