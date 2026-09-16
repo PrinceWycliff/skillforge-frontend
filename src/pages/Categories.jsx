@@ -52,15 +52,12 @@ export default function Categories() {
             <Link to="/catalog" className="inline-block text-xs font-bold text-[#34E0D8] hover:underline">
               Explore Courses →
             </Link>
+
           </div>
+          
         ))}
       </div>
-        {/* Footer Link */}
-              <div className="mt-8 pt-6 border-t border-gray-800 text-center text-xs text-gray-500">
-                <Link to="/" className="hover:text-gray-300 transition">
-                  ← Return to Main Homepage
-                </Link>
-              </div>
+      
     </div>
   );
 }

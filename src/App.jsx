@@ -30,6 +30,7 @@ import Categories from './pages/Categories';
 import Blog from './pages/Blog';
 import Community from './pages/Community';
 import FAQPage from './pages/FAQPage'; // Add FAQ Page Import
+import ComingSoon from './pages/Comingsoon'; // Add Coming Soon Page Import
 
 // Inline Guard for Instructor Studio
 const InstructorRoute = ({ children }) => {
@@ -52,6 +53,11 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/contact" element={<ContactSupport />} />
+                {/* Coming Soon — real pages to be built later */}
+            <Route path="/paths" element={<ComingSoon title="Learning Paths" description="Curated multi-course paths are on the way — we're building this right now." />} />
+            <Route path="/for-business" element={<ComingSoon title="Skillforge for Business" description="Team plans and enterprise features are coming soon." />} />
+            <Route path="/certificates" element={<ComingSoon title="Certificate Verification" description="A public certificate verification page is coming soon." />} />
+            <Route path="/pricing" element={<ComingSoon title="Pricing" description="Skillforge is free to use right now — paid plans are being designed." />} />
             
             {/* Password Recovery Routes */}
             <Route path="/forgot-password" element={<ForgotPassword />} />
