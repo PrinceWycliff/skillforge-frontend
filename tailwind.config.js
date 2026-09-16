@@ -18,7 +18,12 @@ export default {
           body: '#4A4F6B',    // Gray 700 body text
         },
       },
+   
       fontFamily: {
+        serif: ['"Cormorant Garamond"', 'serif'],
+        sans: ['"DM Sans"', 'sans-serif'],
+      },
+            fontFamily: {
         display: ['Manrope', 'sans-serif'],
         body: ['Inter', 'sans-serif'],
       },
