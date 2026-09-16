@@ -29,6 +29,15 @@ export default function Landing() {
             </span>
           </Link>
 
+          {/* Mobile menu button - only visible on small screens */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden p-2 rounded-lg text-gray-700 hover:bg-gray-100"
+              aria-label="Toggle menu"
+            >
+              {/* You can put a hamburger icon here later */}
+              ☰
+            </button>
           <nav
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className={`${isMobileMenuOpen ? "flex" : "hidden"} md:flex items-center gap-8`}
