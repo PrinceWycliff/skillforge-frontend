@@ -30,25 +30,69 @@ export default function Landing() {
           </Link>
 
           {/* Mobile menu button - only visible on small screens */}
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg text-gray-700 hover:bg-gray-100"
-              aria-label="Toggle menu"
-            >
-              {/* You can put a hamburger icon here later */}
-              ☰
-            </button>
-          <nav
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className={`${isMobileMenuOpen ? "flex" : "hidden"} md:flex items-center gap-8`}
-            >
-            <Link to="/catalog" className="text-[#2546F0] font-semibold text-sm">Courses</Link>
-            <Link to="/paths" className="text-gray-600 hover:text-[#0B1130] text-sm font-medium transition">Paths</Link>
-            <Link to="/for-business" className="text-gray-600 hover:text-[#0B1130] text-sm font-medium transition">For Business</Link>
-            <Link to="/certificates" className="text-gray-600 hover:text-[#0B1130] text-sm font-medium transition">Certificates</Link>
-            <Link to="/pricing" className="text-[#2546F0] font-semibold text-sm">Pricing</Link>
-          </nav>
+           {/* Mobile hamburger button */}
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="md:hidden p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition"
+                aria-label="Toggle menu"
+              >
+                {isMobileMenuOpen ? (
+                  <span className="text-xl">✕</span>   // Close icon
+                ) : (
+                  <span className="text-xl">☰</span>   // Hamburger
+                )}
+              </button>
 
+              {/* Desktop nav (always visible on md+) */}
+              <nav className="hidden md:flex items-center gap-8">
+                <Link to="/catalog" className="text-[#2546F0] font-semibold text-sm">Courses</Link>
+                <Link to="/paths" className="text-gray-600 hover:text-[#0B1130] text-sm font-medium transition">Paths</Link>
+                <Link to="/for-business" className="text-gray-600 hover:text-[#0B1130] text-sm font-medium transition">For Business</Link>
+                <Link to="/certificates" className="text-gray-600 hover:text-[#0B1130] text-sm font-medium transition">Certificates</Link>
+                <Link to="/pricing" className="text-[#2546F0] font-semibold text-sm">Pricing</Link>
+              </nav>
+                      {/* Mobile Menu Dropdown */}
+                        {isMobileMenuOpen && (
+                          <div className="md:hidden absolute top-full left-0 right-0 bg-white border-t shadow-lg z-40">
+                            <div className="flex flex-col px-6 py-4 gap-1">
+                              <Link
+                                to="/catalog"
+                                onClick={() => setIsMobileMenuOpen(false)}
+                                className="py-3 text-[#2546F0] font-semibold text-sm border-b border-gray-100"
+                              >
+                                Courses
+                              </Link>
+                              <Link
+                                to="/paths"
+                                onClick={() => setIsMobileMenuOpen(false)}
+                                className="py-3 text-gray-700 hover:text-[#0B1130] text-sm font-medium border-b border-gray-100"
+                              >
+                                Paths
+                              </Link>
+                              <Link
+                                to="/for-business"
+                                onClick={() => setIsMobileMenuOpen(false)}
+                                className="py-3 text-gray-700 hover:text-[#0B1130] text-sm font-medium border-b border-gray-100"
+                              >
+                                For Business
+                              </Link>
+                              <Link
+                                to="/certificates"
+                                onClick={() => setIsMobileMenuOpen(false)}
+                                className="py-3 text-gray-700 hover:text-[#0B1130] text-sm font-medium border-b border-gray-100"
+                              >
+                                Certificates
+                              </Link>
+                              <Link
+                                to="/pricing"
+                                onClick={() => setIsMobileMenuOpen(false)}
+                                className="py-3 text-[#2546F0] font-semibold text-sm"
+                              >
+                                Pricing
+                              </Link>
+                            </div>
+                          </div>
+                        )}
           <div className="flex items-center gap-5">
             {isLoggedIn ? (
               <Link
