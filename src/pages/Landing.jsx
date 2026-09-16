@@ -53,7 +53,7 @@ export default function Landing() {
               </nav>
                       {/* Mobile Menu Dropdown */}
                         {isMobileMenuOpen && (
-                          <div className="md:hidden absolute top-full left-0 right-0 bg-[#0B1130] border-t shadow-lg z-40">
+                          <div className="md:hidden absolute top-full left-0 right-0 bg-[#0B1B6D] border-t shadow-lg z-40">
                             <div className="flex flex-col px-6 py-4 gap-1">
                               <Link
                                 to="/catalog"
