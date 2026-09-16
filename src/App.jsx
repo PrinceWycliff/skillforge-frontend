@@ -19,6 +19,7 @@ import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
 import Footer from './components/Footer';
 import BecomeInstructor from './pages/BecomeInstructor';
+import UpwardContainer from './Upwardcontainer';
 
 // Static Info Page Imports
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -40,6 +41,7 @@ const InstructorRoute = ({ children }) => {
 
 export default function App() {
   return (
+    <UpwardContainer>
     <Router>
       <Scrolltotop />
       <div className="flex flex-col min-h-screen bg-[#0B1130] text-white">
@@ -126,5 +128,6 @@ export default function App() {
         <Footer />
       </div>
     </Router>
+    </UpwardContainer>
   );
 }

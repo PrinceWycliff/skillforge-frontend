@@ -264,8 +264,6 @@ export default function Landing() {
       {/* ========== TRUSTED / TRACKS SECTION ========== */}
       <TrustedSection />
 
-      {/* ========== FOOTER ========== */}
-      <Footer />
     </div>
   );
 }
